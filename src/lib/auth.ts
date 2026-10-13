@@ -29,6 +29,10 @@ const betterAuthInstance = betterAuth({
         defaultValue: "user",
         input: false,
       },
+      username: {
+        type: "string",
+        required: true,
+      },
     },
   },
 });

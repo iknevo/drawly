@@ -24,6 +24,7 @@ export function SignUpView() {
     resolver: zodResolver(signUpSchema),
     defaultValues: {
       name: "",
+      username: "",
       email: "",
       password: "",
     },
@@ -36,6 +37,7 @@ export function SignUpView() {
       name: data.name,
       email: data.email,
       password: data.password,
+      username: data.username,
     });
 
     setIsPending(false);
@@ -70,6 +72,26 @@ export function SignUpView() {
               aria-invalid={fieldState.invalid}
               placeholder="Enter your name"
               autoComplete="name"
+            />
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )}
+      />
+
+      <Controller
+        name="username"
+        control={form.control}
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel className="text-base" htmlFor="username-input">
+              Username
+            </FieldLabel>
+            <Input
+              {...field}
+              id="username-input"
+              aria-invalid={fieldState.invalid}
+              placeholder="Enter your username"
+              autoComplete="username"
             />
             {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
           </Field>
