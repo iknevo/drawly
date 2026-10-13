@@ -1,12 +1,13 @@
 "use client";
 
-import { signUp, useSession } from "@/lib/auth-client";
+import { authClient } from "@/lib/auth-client";
 
 import { PrettyStringify } from "@/components/dev/pretty-stringify";
 import { Button } from "@/components/ui/button";
 
 export default function Page() {
-  const { data } = useSession();
+  const { data } = authClient.useSession();
+
   return (
     <div className="flex min-h-svh p-6">
       <div className="flex max-w-md min-w-0 flex-col gap-4 text-sm leading-loose">
@@ -17,14 +18,34 @@ export default function Page() {
           <Button
             className="mt-2"
             onClick={() => {
-              signUp.email({
+              authClient.signUp.email({
+                name: "nevo",
                 email: "test@gmail.com",
                 password: "demo1234",
-                name: "nevo",
               });
             }}
           >
-            Button
+            Sign up
+          </Button>
+          <Button
+            className="mt-2"
+            onClick={() => {
+              authClient.signIn.email({
+                email: "test@gmail.com",
+                password: "demo1234",
+              });
+            }}
+          >
+            Sign in
+          </Button>
+
+          <Button
+            className="mt-2"
+            onClick={() => {
+              authClient.signOut();
+            }}
+          >
+            Sign out
           </Button>
           <PrettyStringify data={data} />
         </div>
