@@ -1,5 +1,7 @@
 import { mongodbAdapter } from "@better-auth/mongo-adapter";
 import { betterAuth } from "better-auth";
+import { APIError, createAuthMiddleware } from "better-auth/api";
+import { username } from "better-auth/plugins";
 import mongoose from "mongoose";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -29,11 +31,15 @@ const betterAuthInstance = betterAuth({
         defaultValue: "user",
         input: false,
       },
-      username: {
-        type: "string",
-        required: true,
-      },
     },
+  },
+  plugins: [username()],
+  hooks: {
+    before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path === "/sign-up/email" && !ctx.body?.username) {
+        throw new APIError("BAD_REQUEST", { message: "Username is required" });
+      }
+    }),
   },
 });
 

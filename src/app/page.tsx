@@ -22,6 +22,7 @@ export default function Page() {
                 name: "nevo",
                 email: "test@gmail.com",
                 password: "demo1234",
+                username: "nevo",
               });
             }}
           >
