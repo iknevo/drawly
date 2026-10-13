@@ -49,7 +49,6 @@ export function SignInView() {
 
   return (
     <AuthLayout
-      side="right"
       title="Welcome back to Drawly"
       switchHref="/auth/sign-up"
       switchLabel="Sign up"

@@ -51,7 +51,6 @@ export function SignUpView() {
 
   return (
     <AuthLayout
-      side="left"
       title="Create your Drawly account"
       switchHref="/auth/sign-in"
       switchLabel="Sign in"
