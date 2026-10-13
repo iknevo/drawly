@@ -130,3 +130,7 @@
     @apply font-sans;
     }
 }
+
+.dark .qd-root[data-qd-theme="dark"] {
+  background: var(--background);
+}

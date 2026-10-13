@@ -1,3 +1,4 @@
+import { boardsRouter } from "../../modules/boards/server/procedures";
 import { baseProcedure, createTRPCRouter } from "../init";
 import { z } from "zod";
 
@@ -13,6 +14,7 @@ export const appRouter = createTRPCRouter({
         greeting: `hello ${opts.input.text}`,
       };
     }),
+  boards: boardsRouter,
 });
-// export type definition of API
+
 export type AppRouter = typeof appRouter;

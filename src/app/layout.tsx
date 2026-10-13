@@ -1,3 +1,4 @@
+import "@quickdrawjs/core/quickdraw.css";
 import { Geist_Mono, Inter } from "next/font/google";
 
 import { cn } from "@/lib/utils";

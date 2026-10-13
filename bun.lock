@@ -8,6 +8,7 @@
         "@base-ui/react": "^1.9.0",
         "@better-auth/mongo-adapter": "^1.7.7",
         "@hookform/resolvers": "^5.9.1",
+        "@quickdrawjs/react": "^0.3.0",
         "@shadcn/react": "^0.3.1",
         "@t3-oss/env-core": "^0.13.11",
         "@tanstack/react-query": "^5.104.2",
@@ -292,6 +293,10 @@
     "@nolyfill/is-core-module": ["@nolyfill/is-core-module@1.0.39", "", {}, "sha512-nn5ozdjYQpUCZlWGuxcJY/KpxkWQs4DcbMCmKojjyrYDEAGy4Ce19NN4v5MduafTwJlbKc99UA8YhSVqq9yPZA=="],
 
     "@opentelemetry/semantic-conventions": ["@opentelemetry/semantic-conventions@1.43.0", "", {}, "sha512-eSYWTm620tTk45EKSedaUL8MFYI8hW164hIXsgIHyxu3VobUB3fFCu5t0hQby6OoWRPsG1KkKUG2M5UadiLiVg=="],
+
+    "@quickdrawjs/core": ["@quickdrawjs/core@0.3.0", "", {}, "sha512-O2SxlmzBp/pT4gt2kDJWAr+CI6hQF6/bNxWfyZkt3mFGF5DS2c1bhb86X8wJ/eCVLLDxIDoGknxbrRSqlOWK+Q=="],
+
+    "@quickdrawjs/react": ["@quickdrawjs/react@0.3.0", "", { "dependencies": { "@quickdrawjs/core": "0.3.0" }, "peerDependencies": { "react": ">=17" } }, "sha512-vZP53cD8nQIzWvxIGXfGvdOqB6oKqHZoXD1UeDoR2kpfRT2zPEkZj3mKBErRBcLGib0YrPZYf4IcIKu2eNdiYw=="],
 
     "@radix-ui/primitive": ["@radix-ui/primitive@1.2.0", "", {}, "sha512-KABY+VMIRPJL+Vyzv/335FEhXXD/xDv8BMb1kl48/aXJZMH0LtHCTx5ga5RnxaEP3nZHtmTLf1P9vanmFX46bw=="],
 
