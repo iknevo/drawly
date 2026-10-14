@@ -20,11 +20,11 @@ export function HydrateClient(props: { children: React.ReactNode }) {
 
 export function prefetch<T extends ReturnType<TRPCQueryOptions<any>>>(queryOptions: T) {
   const queryClient = getQueryClient();
-  if (queryOptions.queryKey[1]?.type === "infinite") {
-    void queryClient.infiniteQuery(queryOptions as any);
-  } else {
-    void queryClient.query(queryOptions);
-  }
+  const promise =
+    queryOptions.queryKey[1]?.type === "infinite"
+      ? queryClient.infiniteQuery(queryOptions as any)
+      : queryClient.query(queryOptions);
+  void promise.catch(() => {});
 }
 
 // IMPORTANT: Create a stable getter for the query client that

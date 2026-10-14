@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import {
   GhostIcon,
@@ -12,8 +12,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { ErrorBoundary } from "react-error-boundary";
 
+import { ErrorState } from "@/components/error-state";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,12 +54,50 @@ import { toast } from "@/components/ui/toast";
 
 import { useTRPC } from "@/trpc/client";
 
+function BoardCardSkeleton() {
+  return (
+    <Card size="sm" className="gap-3">
+      <div className="bg-muted/40 mx-3 aspect-4/3 animate-pulse rounded-lg" />
+      <div className="flex items-start justify-between gap-2 px-3">
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="bg-muted h-4 w-2/3 animate-pulse rounded" />
+          <div className="bg-muted h-3 w-1/2 animate-pulse rounded" />
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function BoardsListSkeleton() {
+  return (
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 p-6 lg:p-10">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {Array.from({ length: 8 }).map((_, index) => (
+          <BoardCardSkeleton key={index} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function BoardListView() {
+  return (
+    <Suspense fallback={<BoardsListSkeleton />}>
+      <ErrorBoundary
+        fallbackRender={({ resetErrorBoundary }) => <ErrorState onRetry={resetErrorBoundary} />}
+      >
+        <BoardListViewSuspense />
+      </ErrorBoundary>
+    </Suspense>
+  );
+}
+
+function BoardListViewSuspense() {
   const router = useRouter();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
-  const list = useQuery(trpc.boards.list.queryOptions());
+  const { data: boards } = useSuspenseQuery(trpc.boards.list.queryOptions());
 
   const [renameTarget, setRenameTarget] = useState<{ id: string; title: string } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
@@ -92,8 +132,6 @@ export function BoardListView() {
     })
   );
 
-  const boards = list.data ?? [];
-
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 p-6 lg:p-10">
       <header className="flex items-center justify-between">
@@ -107,11 +145,7 @@ export function BoardListView() {
         </Button>
       </header>
 
-      {list.isPending ? (
-        <div className="flex justify-center py-20">
-          <span className="border-muted border-t-foreground size-6 animate-spin rounded-full border-2" />
-        </div>
-      ) : boards.length === 0 ? (
+      {boards.length === 0 ? (
         <Empty className="py-20">
           <EmptyHeader>
             <EmptyMedia>
