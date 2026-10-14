@@ -49,12 +49,17 @@ export const boardsRouter = createTRPCRouter({
       title: board.title,
       snapshot: board.snapshot,
       thumbnail: board.thumbnail ?? null,
+      rev: board.updatedAt.toISOString(),
     };
   }),
 
   save: protectedProcedure.input(saveBoardSchema).mutation(async ({ ctx, input }) => {
     const board = await Board.findOneAndUpdate(
-      { _id: input.id, ownerId: ctx.session.user.id },
+      {
+        _id: input.id,
+        ownerId: ctx.session.user.id,
+        ...(input.force ? {} : { updatedAt: new Date(input.rev) }),
+      },
       {
         $set: {
           snapshot: input.snapshot,
@@ -65,10 +70,19 @@ export const boardsRouter = createTRPCRouter({
     ).lean();
 
     if (!board) {
-      throw new TRPCError({ code: "NOT_FOUND", message: "Board not found" });
+      const exists = await Board.exists({ _id: input.id, ownerId: ctx.session.user.id });
+
+      if (!exists) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Board not found" });
+      }
+
+      throw new TRPCError({
+        code: "CONFLICT",
+        message: "This board was changed somewhere else",
+      });
     }
 
-    return { id: board._id.toString() };
+    return { id: board._id.toString(), rev: board.updatedAt.toISOString() };
   }),
 
   rename: protectedProcedure.input(renameBoardSchema).mutation(async ({ ctx, input }) => {

@@ -1,17 +1,56 @@
 "use client";
 
-import { QuickdrawCanvas } from "../components/quickdraw-canvas";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeftIcon } from "lucide-react";
 import Link from "next/link";
+import { useRef, useState } from "react";
 
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 
 import { useTRPC } from "@/trpc/client";
+
+import {
+  QuickdrawCanvas,
+  type QuickdrawCanvasHandle,
+  type SaveStatus,
+} from "../components/quickdraw-canvas";
+
+const STATUS_LABELS: Record<Exclude<SaveStatus, "conflict">, string> = {
+  saved: "Saved",
+  dirty: "Unsaved changes",
+  saving: "Saving…",
+  error: "Couldn't save — retrying",
+  offline: "Offline — changes pending",
+};
+
+function SaveStatusLabel({ status }: { status: SaveStatus }) {
+  if (status === "conflict") {
+    return <span className="text-destructive text-xs">Changed in another tab</span>;
+  }
+
+  const emphasize = status === "error" || status === "offline";
+
+  return (
+    <span
+      className={
+        emphasize
+          ? "text-destructive flex items-center gap-1.5 text-xs"
+          : "text-muted-foreground flex items-center gap-1.5 text-xs"
+      }
+    >
+      {status === "saving" && (
+        <span className="border-muted border-t-foreground size-3 animate-spin rounded-full border-[1.5px]" />
+      )}
+      {STATUS_LABELS[status]}
+    </span>
+  );
+}
 
 export function BoardView({ boardId }: { boardId: string }) {
   const trpc = useTRPC();
   const board = useQuery(trpc.boards.get.queryOptions({ id: boardId }));
+  const [status, setStatus] = useState<SaveStatus>("saved");
+  const canvasRef = useRef<QuickdrawCanvasHandle>(null);
 
   if (board.isPending) {
     return (
@@ -45,9 +84,36 @@ export function BoardView({ boardId }: { boardId: string }) {
           <ArrowLeftIcon />
         </Link>
         <h1 className="truncate text-sm font-medium">{data.title}</h1>
+        <div className="ml-auto flex items-center gap-3">
+          {status === "conflict" && (
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => void canvasRef.current?.reloadRemote()}
+              >
+                Reload
+              </Button>
+              <Button
+                size="sm"
+                variant="default"
+                onClick={() => void canvasRef.current?.overwrite()}
+              >
+                Overwrite
+              </Button>
+            </div>
+          )}
+          <SaveStatusLabel status={status} />
+        </div>
       </header>
       <div className="min-h-0 flex-1">
-        <QuickdrawCanvas boardId={data.id} snapshot={data.snapshot} />
+        <QuickdrawCanvas
+          ref={canvasRef}
+          boardId={data.id}
+          snapshot={data.snapshot}
+          rev={data.rev}
+          onStatus={setStatus}
+        />
       </div>
     </div>
   );

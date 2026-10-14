@@ -28,4 +28,6 @@ export const saveBoardSchema = boardIdSchema.extend({
     "Board is too large to save"
   ),
   thumbnail: z.string().max(2_000_000).nullable().optional(),
+  rev: z.string().min(1),
+  force: z.boolean().optional(),
 });
