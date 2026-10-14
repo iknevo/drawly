@@ -19,6 +19,7 @@ import { useTRPC } from "@/trpc/client";
 
 const SAVE_DELAY = 1000;
 const THUMBNAIL_INTERVAL = 2000;
+const ZOOM_K = 0.012;
 
 type QuickdrawCanvasProps = {
   boardId: string;
@@ -153,17 +154,70 @@ export function QuickdrawCanvas({ boardId, snapshot }: QuickdrawCanvasProps) {
   useEffect(() => {
     const wrap = wrapRef.current;
     if (!wrap) return;
+
+    const pageFromClient = (editor: NonNullable<QuickdrawRef["editor"]>, clientX: number, clientY: number) => {
+      const rect = editor.container.getBoundingClientRect();
+      const sx = clientX - rect.left;
+      const sy = clientY - rect.top;
+      return {
+        x: Number.isFinite(sx) ? sx : rect.width / 2,
+        y: Number.isFinite(sy) ? sy : rect.height / 2,
+      };
+    };
+
     const onWheel = (event: WheelEvent) => {
-      if (!event.shiftKey || event.ctrlKey || event.metaKey) return;
       const editor = qdRef.current?.editor;
       if (!editor) return;
+
+      if (event.ctrlKey || event.metaKey) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!Number.isFinite(event.deltaY)) return;
+        const cam = editor.camera;
+        if (
+          !Number.isFinite(cam.x) ||
+          !Number.isFinite(cam.y) ||
+          !Number.isFinite(cam.z) ||
+          cam.z <= 0
+        ) {
+          return;
+        }
+        const mult = Math.exp(-event.deltaY * ZOOM_K);
+        if (!Number.isFinite(mult) || mult <= 0) return;
+        const point = pageFromClient(editor, event.clientX, event.clientY);
+        editor.zoomAt(point.x, point.y, mult);
+        return;
+      }
+
+      if (!event.shiftKey) return;
       event.preventDefault();
       event.stopPropagation();
       const dx = event.deltaX !== 0 ? event.deltaX : event.deltaY;
+      if (!Number.isFinite(dx)) return;
       editor.pan(-dx, 0);
     };
+
     wrap.addEventListener("wheel", onWheel, { capture: true, passive: false });
     return () => wrap.removeEventListener("wheel", onWheel, { capture: true });
+  }, []);
+
+  useEffect(() => {
+    const editor = qdRef.current?.editor;
+    if (!editor) return;
+    const off = editor.on("camera", () => {
+      const cam = editor.camera;
+      if (
+        !Number.isFinite(cam.x) ||
+        !Number.isFinite(cam.y) ||
+        !Number.isFinite(cam.z) ||
+        cam.z <= 0
+      ) {
+        editor.setCamera({ x: 0, y: 0, z: 1 });
+      }
+    });
+    return () => {
+      off();
+    };
   }, []);
 
   useEffect(() => {
