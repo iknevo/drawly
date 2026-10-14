@@ -20,7 +20,7 @@ function ThemeProvider({ children, ...props }: React.ComponentProps<typeof NextT
 
 function isInsideQuickdraw(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) return false;
-  return !!target.closest('.qd-root, .qd-ui, .qd-canvas, .qd-overlay');
+  return !!target.closest(".qd-root, .qd-ui, .qd-canvas, .qd-overlay");
 }
 
 function isTypingTarget(target: EventTarget | null) {
