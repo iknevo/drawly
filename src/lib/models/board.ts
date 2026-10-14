@@ -9,6 +9,7 @@ const boardSchema = new mongoose.Schema(
       default: () => ({ document: { store: {} } }),
     },
     thumbnail: { type: String, default: null },
+    isPublic: { type: Boolean, default: false },
   },
   { timestamps: true, versionKey: false, minimize: false }
 );

@@ -7,8 +7,9 @@ import {
   createBoardSchema,
   renameBoardSchema,
   saveBoardSchema,
+  setBoardPublicSchema,
 } from "@/modules/boards/validation";
-import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
+import { baseProcedure, createTRPCRouter, protectedProcedure } from "@/trpc/init";
 
 export const boardsRouter = createTRPCRouter({
   list: protectedProcedure.query(async ({ ctx }) => {
@@ -50,6 +51,7 @@ export const boardsRouter = createTRPCRouter({
       snapshot: board.snapshot,
       thumbnail: board.thumbnail ?? null,
       rev: board.updatedAt.toISOString(),
+      isPublic: board.isPublic ?? false,
     };
   }),
 
@@ -66,7 +68,7 @@ export const boardsRouter = createTRPCRouter({
           ...(input.thumbnail !== undefined ? { thumbnail: input.thumbnail } : {}),
         },
       },
-      { new: true }
+      { returnDocument: "after" }
     ).lean();
 
     if (!board) {
@@ -89,7 +91,7 @@ export const boardsRouter = createTRPCRouter({
     const board = await Board.findOneAndUpdate(
       { _id: input.id, ownerId: ctx.session.user.id },
       { $set: { title: input.title } },
-      { new: true }
+      { returnDocument: "after" }
     ).lean();
 
     if (!board) {
@@ -110,5 +112,35 @@ export const boardsRouter = createTRPCRouter({
     }
 
     return { id: board._id.toString() };
+  }),
+
+  setPublic: protectedProcedure.input(setBoardPublicSchema).mutation(async ({ ctx, input }) => {
+    const board = await Board.findOneAndUpdate(
+      { _id: input.id, ownerId: ctx.session.user.id },
+      { $set: { isPublic: input.isPublic } },
+      { returnDocument: "after" }
+    ).lean();
+
+    if (!board) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Board not found" });
+    }
+
+    return { id: board._id.toString(), isPublic: board.isPublic ?? false };
+  }),
+
+  getShared: baseProcedure.input(boardIdSchema).query(async ({ input }) => {
+    const board = await Board.findOne({ _id: input.id, isPublic: true })
+      .select("title snapshot updatedAt")
+      .lean();
+
+    if (!board) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Board not found" });
+    }
+
+    return {
+      title: board.title,
+      snapshot: board.snapshot,
+      updatedAt: board.updatedAt,
+    };
   }),
 });

@@ -14,6 +14,10 @@ export const renameBoardSchema = boardIdSchema.extend({
   title: boardTitle,
 });
 
+export const setBoardPublicSchema = boardIdSchema.extend({
+  isPublic: z.boolean(),
+});
+
 const MAX_SNAPSHOT_BYTES = 15_000_000;
 
 const snapshotSchema = z.object({

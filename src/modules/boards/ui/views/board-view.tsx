@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  QuickdrawCanvas,
+  type QuickdrawCanvasHandle,
+  type SaveStatus,
+} from "../components/quickdraw-canvas";
+import { ShareMenu } from "../components/share-menu";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeftIcon } from "lucide-react";
 import Link from "next/link";
@@ -8,12 +14,6 @@ import { useRef, useState } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
 
 import { useTRPC } from "@/trpc/client";
-
-import {
-  QuickdrawCanvas,
-  type QuickdrawCanvasHandle,
-  type SaveStatus,
-} from "../components/quickdraw-canvas";
 
 const STATUS_LABELS: Record<Exclude<SaveStatus, "conflict">, string> = {
   saved: "Saved",
@@ -104,6 +104,7 @@ export function BoardView({ boardId }: { boardId: string }) {
             </div>
           )}
           <SaveStatusLabel status={status} />
+          <ShareMenu boardId={data.id} isPublic={data.isPublic} />
         </div>
       </header>
       <div className="min-h-0 flex-1">
