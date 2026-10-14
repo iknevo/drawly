@@ -1,4 +1,5 @@
 import "@quickdrawjs/core/quickdraw.css";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { Geist_Mono, Inter } from "next/font/google";
 
 import { cn } from "@/lib/utils";
@@ -34,6 +35,7 @@ export default function RootLayout({
             <TooltipProvider>
               <main>{children}</main>
               <Toaster />
+              <ReactQueryDevtools initialIsOpen={false} />
             </TooltipProvider>
           </ThemeProvider>
         </TRPCReactProvider>
