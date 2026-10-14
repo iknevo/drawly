@@ -18,6 +18,11 @@ function ThemeProvider({ children, ...props }: React.ComponentProps<typeof NextT
   );
 }
 
+function isInsideQuickdraw(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false;
+  return !!target.closest('.qd-root, .qd-ui, .qd-canvas, .qd-overlay');
+}
+
 function isTypingTarget(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) {
     return false;
@@ -49,6 +54,10 @@ function ThemeHotkey() {
       }
 
       if (isTypingTarget(event.target)) {
+        return;
+      }
+
+      if (isInsideQuickdraw(event.target)) {
         return;
       }
 

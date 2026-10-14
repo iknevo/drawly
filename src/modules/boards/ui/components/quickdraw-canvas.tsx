@@ -37,7 +37,8 @@ async function blobToDataURL(blob: Blob): Promise<string> {
 export function QuickdrawCanvas({ boardId, snapshot }: QuickdrawCanvasProps) {
   const trpc = useTRPC();
   const { resolvedTheme, setTheme } = useTheme();
-  const [grid, setGrid] = useState<GridId>("dots");
+  const [grid, setGrid] = useState<GridId>("none");
+  const wrapRef = useRef<HTMLDivElement>(null);
 
   const store = useMemo(() => {
     const next = new Store();
@@ -150,6 +151,30 @@ export function QuickdrawCanvas({ boardId, snapshot }: QuickdrawCanvasProps) {
   const theme = resolvedTheme === "dark" ? "dark" : "light";
 
   useEffect(() => {
+    const wrap = wrapRef.current;
+    if (!wrap) return;
+    const onWheel = (event: WheelEvent) => {
+      if (!event.shiftKey || event.ctrlKey || event.metaKey) return;
+      const editor = qdRef.current?.editor;
+      if (!editor) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const dx = event.deltaX !== 0 ? event.deltaX : event.deltaY;
+      editor.pan(-dx, 0);
+    };
+    wrap.addEventListener("wheel", onWheel, { capture: true, passive: false });
+    return () => wrap.removeEventListener("wheel", onWheel, { capture: true });
+  }, []);
+
+  useEffect(() => {
+    const editor = qdRef.current?.editor;
+    const container = editor?.container;
+    if (container) {
+      container.focus({ preventScroll: true });
+    }
+  }, []);
+
+  useEffect(() => {
     if (theme !== "dark") return;
     const editor = qdRef.current?.editor;
     if (!editor) return;
@@ -165,7 +190,7 @@ export function QuickdrawCanvas({ boardId, snapshot }: QuickdrawCanvasProps) {
   }, [theme]);
 
   return (
-    <div className="relative h-full w-full overflow-hidden">
+    <div ref={wrapRef} className="relative h-full w-full overflow-hidden">
       <Quickdraw
         ref={qdRef}
         store={store}
