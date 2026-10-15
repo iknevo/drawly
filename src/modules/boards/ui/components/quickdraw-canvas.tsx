@@ -1,5 +1,6 @@
 "use client";
 
+import { useBoardCamera } from "../hooks/use-board-camera";
 import {
   type Diff,
   type DiffSource,
@@ -15,6 +16,7 @@ import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState 
 
 import { toast } from "@/components/ui/toast";
 
+import { CanvasControls } from "./canvas-controls";
 import { useTRPC } from "@/trpc/client";
 
 const SAVE_DELAY = 1000;
@@ -33,6 +35,7 @@ type QuickdrawCanvasProps = {
   boardId: string;
   snapshot: unknown;
   rev: string;
+  title?: string;
   onStatus?: (status: SaveStatus) => void;
   ref?: React.Ref<QuickdrawCanvasHandle>;
 };
@@ -46,7 +49,14 @@ async function blobToDataURL(blob: Blob): Promise<string> {
   });
 }
 
-export function QuickdrawCanvas({ boardId, snapshot, rev, onStatus, ref }: QuickdrawCanvasProps) {
+export function QuickdrawCanvas({
+  boardId,
+  snapshot,
+  rev,
+  title,
+  onStatus,
+  ref,
+}: QuickdrawCanvasProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const { resolvedTheme, setTheme } = useTheme();
@@ -68,6 +78,28 @@ export function QuickdrawCanvas({ boardId, snapshot, rev, onStatus, ref }: Quick
   });
 
   const qdRef = useRef<QuickdrawRef>(null);
+  const { fit, zoomIn, zoomOut } = useBoardCamera({
+    wrapperRef: wrapRef,
+    qdRef,
+    enabled: false,
+  });
+
+  const download = useCallback(async () => {
+    const editor = qdRef.current?.editor;
+    if (!editor) return;
+    const blob = await editor.exportImage({ background: true, scale: 2 });
+    if (!blob) {
+      toast.add({ type: "error", description: "Nothing to download yet." });
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${title || "board"}.png`;
+    anchor.click();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }, [title]);
+
   const tabIdRef = useRef("");
   const channelRef = useRef<BroadcastChannel | null>(null);
   const revRef = useRef(rev);
@@ -446,6 +478,14 @@ export function QuickdrawCanvas({ boardId, snapshot, rev, onStatus, ref }: Quick
         onGridChange={(next) => setGrid(next)}
         watermark={false}
         autoFit
+      />
+      <CanvasControls
+        grid={grid}
+        onGridChange={setGrid}
+        onFit={fit}
+        onZoomIn={zoomIn}
+        onZoomOut={zoomOut}
+        onDownload={() => void download()}
       />
     </div>
   );

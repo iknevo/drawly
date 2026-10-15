@@ -113,6 +113,7 @@ export function BoardView({ boardId }: { boardId: string }) {
           boardId={data.id}
           snapshot={data.snapshot}
           rev={data.rev}
+          title={data.title}
           onStatus={setStatus}
         />
       </div>

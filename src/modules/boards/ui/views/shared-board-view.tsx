@@ -1,41 +1,16 @@
 "use client";
 
+import { CanvasControls } from "../components/canvas-controls";
 import { useBoardCamera } from "../hooks/use-board-camera";
 import { type GridId, Quickdraw, type QuickdrawRef, Store, THEMES } from "@quickdrawjs/react";
-import {
-  DownloadIcon,
-  Grid2x2Icon,
-  MaximizeIcon,
-  MinusIcon,
-  MoonIcon,
-  PlusIcon,
-  SunIcon,
-} from "lucide-react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
-import { Button, buttonVariants } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { buttonVariants } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
-
-const GRID_OPTIONS: { id: GridId; label: string }[] = [
-  { id: "none", label: "None" },
-  { id: "lines", label: "Lines" },
-  { id: "ruled", label: "Ruled" },
-  { id: "dots", label: "Dots" },
-  { id: "crosses", label: "Crosses" },
-  { id: "iso", label: "Isometric" },
-];
 
 type SharedBoardViewProps = {
   title: string;
@@ -44,15 +19,10 @@ type SharedBoardViewProps = {
 };
 
 export function SharedBoardView({ title, snapshot, signedIn }: SharedBoardViewProps) {
-  const { resolvedTheme, setTheme } = useTheme();
+  const { resolvedTheme } = useTheme();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const qdRef = useRef<QuickdrawRef>(null);
   const [grid, setGrid] = useState<GridId>("none");
-  const mounted = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false
-  );
 
   const store = useMemo(() => {
     const next = new Store();
@@ -120,50 +90,14 @@ export function SharedBoardView({ title, snapshot, signedIn }: SharedBoardViewPr
           />
         </div>
 
-        <div className="bg-background/90 absolute right-3 bottom-3 flex items-center gap-0.5 rounded-lg border p-1 shadow-sm backdrop-blur">
-          <Button variant="ghost" size="icon-sm" aria-label="Zoom out" onClick={zoomOut}>
-            <MinusIcon />
-          </Button>
-          <Button variant="ghost" size="icon-sm" aria-label="Zoom in" onClick={zoomIn}>
-            <PlusIcon />
-          </Button>
-          <Button variant="ghost" size="icon-sm" aria-label="Fit to content" onClick={fit}>
-            <MaximizeIcon />
-          </Button>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={<Button variant="ghost" size="icon-sm" aria-label="Backdrop" />}
-            >
-              <Grid2x2Icon />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuRadioGroup
-                value={grid}
-                onValueChange={(value) => setGrid(value as GridId)}
-              >
-                <DropdownMenuLabel>Backdrop</DropdownMenuLabel>
-                {GRID_OPTIONS.map((option) => (
-                  <DropdownMenuRadioItem key={option.id} value={option.id}>
-                    {option.label}
-                  </DropdownMenuRadioItem>
-                ))}
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <Button variant="ghost" size="icon-sm" aria-label="Download PNG" onClick={download}>
-            <DownloadIcon />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Toggle theme"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          >
-            {mounted && theme === "dark" ? <SunIcon /> : <MoonIcon />}
-          </Button>
-        </div>
+        <CanvasControls
+          grid={grid}
+          onGridChange={setGrid}
+          onFit={fit}
+          onZoomIn={zoomIn}
+          onZoomOut={zoomOut}
+          onDownload={() => void download()}
+        />
       </div>
     </div>
   );
