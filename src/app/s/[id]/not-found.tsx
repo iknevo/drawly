@@ -24,7 +24,7 @@ export default function NotFound() {
         </p>
       </div>
       <div className="flex items-center gap-3">
-        <Link href="/auth/sign-up" className={cn(buttonVariants())}>
+        <Link href="/boards" className={cn(buttonVariants())}>
           Create your own
         </Link>
         <Link href="/" className={cn(buttonVariants({ variant: "ghost" }))}>

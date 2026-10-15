@@ -13,7 +13,7 @@ export const metadata = {
 };
 
 export default async function Page({ searchParams }: { searchParams: Promise<SearchParams> }) {
-  await auth.protect({ role: "user" });
+  await auth.protect({ role: "user", redirectTo: "/boards" });
 
   const { page, size } = loadBoardListParams(await searchParams);
 

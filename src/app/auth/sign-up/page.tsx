@@ -6,8 +6,14 @@ export const metadata = {
   title: "Sign Up",
 };
 
-export default async function Page() {
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ redirect?: string }>;
+}) {
   await auth.protect({ guestOnly: true });
 
-  return <SignUpView />;
+  const { redirect } = await searchParams;
+
+  return <SignUpView redirectTo={redirect} />;
 }

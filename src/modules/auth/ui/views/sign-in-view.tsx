@@ -9,13 +9,14 @@ import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { authClient } from "@/lib/auth-client";
+import { authHref, safeRedirect } from "@/lib/auth-redirect";
 
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/toast";
 
-export function SignInView() {
+export function SignInView({ redirectTo }: { redirectTo?: string }) {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
 
@@ -43,14 +44,16 @@ export function SignInView() {
       return;
     }
 
-    router.push("/");
+    router.push(safeRedirect(redirectTo) ?? "/");
     router.refresh();
   }
+
+  const switchHref = authHref("/auth/sign-up", redirectTo);
 
   return (
     <AuthLayout
       title="Welcome back to Drawly"
-      switchHref="/auth/sign-up"
+      switchHref={switchHref}
       switchLabel="Sign up"
       onSubmit={form.handleSubmit(onSubmit)}
     >

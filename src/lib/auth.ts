@@ -6,6 +6,7 @@ import mongoose from "mongoose";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { authHref } from "./auth-redirect";
 import dbConnect from "./db";
 
 await dbConnect();
@@ -48,7 +49,11 @@ type Role = "user" | "admin";
 export const auth = {
   ...betterAuthInstance,
 
-  async protect({ role, guestOnly = false }: { role?: Role; guestOnly?: boolean } = {}) {
+  async protect({
+    role,
+    guestOnly = false,
+    redirectTo,
+  }: { role?: Role; guestOnly?: boolean; redirectTo?: string } = {}) {
     const session = await betterAuthInstance.api.getSession({
       headers: await headers(),
     });
@@ -62,7 +67,7 @@ export const auth = {
     }
 
     if (!session) {
-      redirect("/auth/sign-in");
+      redirect(authHref("/auth/sign-in", redirectTo));
     }
 
     if (role && session.user.role !== role) {
