@@ -3,26 +3,46 @@
 import { CanvasControls } from "../components/canvas-controls";
 import { useBoardCamera } from "../hooks/use-board-camera";
 import { type GridId, Quickdraw, type QuickdrawRef, Store, THEMES } from "@quickdrawjs/react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Copy } from "lucide-react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { authHref } from "@/lib/auth-redirect";
 import { cn } from "@/lib/utils";
 
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
 
+import { useTRPC } from "@/trpc/client";
+
 type SharedBoardViewProps = {
+  boardId: string;
   title: string;
   snapshot: unknown;
   signedIn: boolean;
 };
 
-export function SharedBoardView({ title, snapshot, signedIn }: SharedBoardViewProps) {
+export function SharedBoardView({ boardId, title, snapshot, signedIn }: SharedBoardViewProps) {
+  const router = useRouter();
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const { resolvedTheme } = useTheme();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const qdRef = useRef<QuickdrawRef>(null);
   const [grid, setGrid] = useState<GridId>("none");
+
+  const cloneBoard = useMutation(
+    trpc.boards.clone.mutationOptions({
+      onSuccess: async ({ id }) => {
+        await queryClient.invalidateQueries(trpc.boards.list.queryFilter());
+        router.push(`/board/${id}`);
+      },
+      onError: (error) => toast.add({ type: "error", description: error.message }),
+    })
+  );
 
   const store = useMemo(() => {
     const next = new Store();
@@ -65,16 +85,32 @@ export function SharedBoardView({ title, snapshot, signedIn }: SharedBoardViewPr
     setTimeout(() => URL.revokeObjectURL(url), 5000);
   };
 
+  const cloneHref = authHref("/auth/sign-up", `/s/${boardId}`);
+
   return (
     <div className="flex h-svh flex-col">
       <header className="flex items-center gap-3 border-b px-3 py-2">
         <span className="truncate text-sm font-medium">{title}</span>
-        <Link
-          href={signedIn ? "/boards" : "/auth/sign-up"}
-          className={cn(buttonVariants({ variant: "outline", size: "sm" }), "ml-auto")}
-        >
-          Create your own
-        </Link>
+        <div className="ml-auto flex items-center gap-2">
+          <Link href="/boards" className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}>
+            Create your own
+          </Link>
+          {signedIn ? (
+            <Button
+              size="sm"
+              disabled={cloneBoard.isPending}
+              onClick={() => cloneBoard.mutate({ id: boardId })}
+            >
+              <Copy />
+              Clone to my boards
+            </Button>
+          ) : (
+            <Link href={cloneHref} className={cn(buttonVariants({ size: "sm" }))}>
+              <Copy />
+              Clone to my boards
+            </Link>
+          )}
+        </div>
       </header>
 
       <div className="relative min-h-0 flex-1">

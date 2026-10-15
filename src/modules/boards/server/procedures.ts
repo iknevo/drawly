@@ -55,6 +55,24 @@ export const boardsRouter = createTRPCRouter({
     return { id: board._id.toString() };
   }),
 
+  clone: protectedProcedure.input(boardIdSchema).mutation(async ({ ctx, input }) => {
+    const source = await Board.findOne({ _id: input.id, isPublic: true }).lean();
+
+    if (!source) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Board not found" });
+    }
+
+    const board = await Board.create({
+      ownerId: ctx.session.user.id,
+      title: source.title,
+      snapshot: source.snapshot,
+      thumbnail: source.thumbnail ?? null,
+      isPublic: false,
+    });
+
+    return { id: board._id.toString() };
+  }),
+
   get: protectedProcedure.input(boardIdSchema).query(async ({ ctx, input }) => {
     const board = await Board.findOne({
       _id: input.id,

@@ -40,5 +40,12 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
   const session = await auth.api.getSession({ headers: await headers() });
 
-  return <SharedBoardView title={board.title} snapshot={board.snapshot} signedIn={!!session} />;
+  return (
+    <SharedBoardView
+      boardId={id}
+      title={board.title}
+      snapshot={board.snapshot}
+      signedIn={!!session}
+    />
+  );
 }
