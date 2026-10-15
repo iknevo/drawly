@@ -1,21 +1,17 @@
 "use client";
 
-import {
-  QuickdrawCanvas,
-  type QuickdrawCanvasHandle,
-  type SaveStatus,
-} from "../components/quickdraw-canvas";
+import { QuickdrawCanvas, type SaveStatus } from "../components/quickdraw-canvas";
 import { ShareMenu } from "../components/share-menu";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeftIcon } from "lucide-react";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useState } from "react";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 
 import { useTRPC } from "@/trpc/client";
 
-const STATUS_LABELS: Record<Exclude<SaveStatus, "conflict">, string> = {
+const STATUS_LABELS: Record<SaveStatus, string> = {
   saved: "Saved",
   dirty: "Unsaved changes",
   saving: "Saving…",
@@ -24,10 +20,6 @@ const STATUS_LABELS: Record<Exclude<SaveStatus, "conflict">, string> = {
 };
 
 function SaveStatusLabel({ status }: { status: SaveStatus }) {
-  if (status === "conflict") {
-    return <span className="text-destructive text-xs">Changed in another tab</span>;
-  }
-
   const emphasize = status === "error" || status === "offline";
 
   return (
@@ -50,7 +42,6 @@ export function BoardView({ boardId }: { boardId: string }) {
   const trpc = useTRPC();
   const board = useQuery(trpc.boards.get.queryOptions({ id: boardId }));
   const [status, setStatus] = useState<SaveStatus>("saved");
-  const canvasRef = useRef<QuickdrawCanvasHandle>(null);
 
   if (board.isPending) {
     return (
@@ -85,31 +76,12 @@ export function BoardView({ boardId }: { boardId: string }) {
         </Link>
         <h1 className="truncate text-sm font-medium">{data.title}</h1>
         <div className="ml-auto flex items-center gap-3">
-          {status === "conflict" && (
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => void canvasRef.current?.reloadRemote()}
-              >
-                Reload
-              </Button>
-              <Button
-                size="sm"
-                variant="default"
-                onClick={() => void canvasRef.current?.overwrite()}
-              >
-                Overwrite
-              </Button>
-            </div>
-          )}
           <SaveStatusLabel status={status} />
           <ShareMenu boardId={data.id} isPublic={data.isPublic} />
         </div>
       </header>
       <div className="min-h-0 flex-1">
         <QuickdrawCanvas
-          ref={canvasRef}
           boardId={data.id}
           snapshot={data.snapshot}
           rev={data.rev}

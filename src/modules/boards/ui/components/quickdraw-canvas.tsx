@@ -27,11 +27,10 @@ const THUMBNAIL_MARGIN = 48;
 const ZOOM_K = 0.012;
 const MAX_RETRY_DELAY = 30_000;
 
-export type SaveStatus = "saved" | "dirty" | "saving" | "error" | "conflict" | "offline";
+export type SaveStatus = "saved" | "dirty" | "saving" | "error" | "offline";
 
 export type QuickdrawCanvasHandle = {
   reloadRemote: () => Promise<void>;
-  overwrite: () => Promise<void>;
 };
 
 type QuickdrawCanvasProps = {
@@ -103,8 +102,6 @@ export function QuickdrawCanvas({
     setTimeout(() => URL.revokeObjectURL(url), 5000);
   }, [title]);
 
-  const tabIdRef = useRef("");
-  const channelRef = useRef<BroadcastChannel | null>(null);
   const revRef = useRef(rev);
   const statusRef = useRef<SaveStatus>("saved");
   const onlineRef = useRef(true);
@@ -113,7 +110,6 @@ export function QuickdrawCanvas({
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const flushingRef = useRef(false);
   const dirtyRef = useRef(false);
-  const conflictRef = useRef(false);
   const unmountedRef = useRef(false);
   const thumbnailRef = useRef<string | null | undefined>(undefined);
   const thumbnailTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -214,6 +210,19 @@ export function QuickdrawCanvas({
     }, delay);
   }, []);
 
+  const reloadRemote = useCallback(async () => {
+    try {
+      const fresh = await queryClient.query(trpc.boards.get.queryOptions({ id: boardId }));
+      revRef.current = fresh.rev;
+      store.loadSnapshot(fresh.snapshot as Parameters<Store["loadSnapshot"]>[0], "remote");
+      dirtyRef.current = false;
+      attemptRef.current = 0;
+      reportStatus("saved");
+    } catch {
+      reportStatus("error");
+    }
+  }, [boardId, queryClient, reportStatus, store, trpc]);
+
   const flush = useCallback(
     async (options: { forceRev?: boolean } = {}) => {
       const forceRev = options.forceRev ?? false;
@@ -228,10 +237,6 @@ export function QuickdrawCanvas({
       }
 
       if (flushingRef.current) return;
-      if (conflictRef.current && !forceRev) {
-        reportStatus("conflict");
-        return;
-      }
       if (!dirtyRef.current && !forceRev) return;
       if (!onlineRef.current) {
         reportStatus("offline");
@@ -254,21 +259,13 @@ export function QuickdrawCanvas({
 
         revRef.current = result.rev;
         attemptRef.current = 0;
-        conflictRef.current = false;
         reportStatus("saved");
-        channelRef.current?.postMessage({
-          type: "saved",
-          boardId,
-          rev: result.rev,
-          tabId: tabIdRef.current,
-        });
       } catch (error) {
         const code = (error as { data?: { code?: string } } | null)?.data?.code;
 
         if (code === "CONFLICT") {
-          dirtyRef.current = true;
-          conflictRef.current = true;
-          reportStatus("conflict");
+          dirtyRef.current = false;
+          await reloadRemote();
           return;
         }
 
@@ -284,43 +281,18 @@ export function QuickdrawCanvas({
 
       if (retry) scheduleRetry();
     },
-    [boardId, reportStatus, scheduleRetry, store]
+    [boardId, reloadRemote, reportStatus, scheduleRetry, store]
   );
 
   useEffect(() => {
     flushRef.current = flush;
   }, [flush]);
 
-  const reloadRemote = useCallback(async () => {
-    try {
-      const fresh = await queryClient.query(trpc.boards.get.queryOptions({ id: boardId }));
-      revRef.current = fresh.rev;
-      store.loadSnapshot(fresh.snapshot as Parameters<Store["loadSnapshot"]>[0], "remote");
-      dirtyRef.current = false;
-      conflictRef.current = false;
-      attemptRef.current = 0;
-      reportStatus("saved");
-    } catch {
-      reportStatus("error");
-    }
-  }, [boardId, queryClient, reportStatus, store, trpc]);
-
-  const overwrite = useCallback(async () => {
-    conflictRef.current = false;
-    dirtyRef.current = true;
-    await flushRef.current({ forceRev: true });
-    void sendThumbnailRef.current();
-  }, []);
-
-  useImperativeHandle(ref, () => ({ reloadRemote, overwrite }), [reloadRemote, overwrite]);
+  useImperativeHandle(ref, () => ({ reloadRemote }), [reloadRemote]);
 
   const handleChange = useCallback(
     (_diff: Diff, source: DiffSource) => {
       if (source !== "user") return;
-      if (conflictRef.current) {
-        reportStatus("conflict");
-        return;
-      }
       dirtyRef.current = true;
       reportStatus("dirty");
       scheduleSave();
@@ -369,40 +341,6 @@ export function QuickdrawCanvas({
     window.addEventListener("beforeunload", onBeforeUnload);
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, []);
-
-  useEffect(() => {
-    if (typeof BroadcastChannel === "undefined") return;
-    const tabId =
-      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-        ? crypto.randomUUID()
-        : Math.random().toString(36).slice(2);
-    tabIdRef.current = tabId;
-    const channel = new BroadcastChannel(`drawly-board-${boardId}`);
-    channelRef.current = channel;
-    channel.onmessage = (event) => {
-      const message = event.data as
-        { type?: string; boardId?: string; rev?: string; tabId?: string } | undefined;
-      if (
-        !message ||
-        message.type !== "saved" ||
-        message.boardId !== boardId ||
-        message.tabId === tabId ||
-        message.rev === revRef.current
-      ) {
-        return;
-      }
-      if (dirtyRef.current) {
-        conflictRef.current = true;
-        reportStatus("conflict");
-        return;
-      }
-      void reloadRemote();
-    };
-    return () => {
-      channel.close();
-      channelRef.current = null;
-    };
-  }, [boardId, reloadRemote, reportStatus]);
 
   useEffect(() => {
     const onVisibility = () => {
