@@ -1,19 +1,7 @@
 import { boardsRouter } from "../../modules/boards/server/procedures";
-import { baseProcedure, createTRPCRouter } from "../init";
-import { z } from "zod";
+import { createTRPCRouter } from "../init";
 
 export const appRouter = createTRPCRouter({
-  hello: baseProcedure
-    .input(
-      z.object({
-        text: z.string(),
-      })
-    )
-    .query((opts) => {
-      return {
-        greeting: `hello ${opts.input.text}`,
-      };
-    }),
   boards: boardsRouter,
 });
 

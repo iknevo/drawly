@@ -15,9 +15,9 @@ export const metadata = {
 export default async function Page({ searchParams }: { searchParams: Promise<SearchParams> }) {
   await auth.protect({ role: "user", redirectTo: "/boards" });
 
-  const { page, size } = loadBoardListParams(await searchParams);
+  const { page, size, q, sort } = loadBoardListParams(await searchParams);
 
-  prefetch(trpc.boards.list.queryOptions({ page, pageSize: Number(size) }));
+  prefetch(trpc.boards.list.queryOptions({ page, pageSize: Number(size), q, sort }));
 
   return (
     <HydrateClient>

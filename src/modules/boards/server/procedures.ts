@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import type { SortOrder } from "mongoose";
 
 import { Board } from "@/lib/models/board";
 
@@ -15,18 +16,37 @@ import {
 } from "@/modules/boards/validation";
 import { baseProcedure, createTRPCRouter, protectedProcedure } from "@/trpc/init";
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 export const boardsRouter = createTRPCRouter({
   list: protectedProcedure.input(listBoardsSchema).query(async ({ ctx, input }) => {
-    const { page, pageSize } = input;
+    const { page, pageSize, q, sort } = input;
+
+    const filter: { ownerId: string; title?: { $regex: string; $options: string } } = {
+      ownerId: ctx.session.user.id,
+    };
+
+    if (q) {
+      filter.title = { $regex: escapeRegExp(q), $options: "i" };
+    }
+
+    const sortSpec: Record<string, SortOrder> =
+      sort === "title"
+        ? { title: 1, updatedAt: -1 }
+        : sort === "created"
+          ? { createdAt: -1 }
+          : { updatedAt: -1 };
 
     const [boards, total] = await Promise.all([
-      Board.find({ ownerId: ctx.session.user.id })
-        .sort({ updatedAt: -1 })
+      Board.find(filter)
+        .sort(sortSpec)
         .skip((page - 1) * pageSize)
         .limit(pageSize)
-        .select("title thumbnail updatedAt")
+        .select("title thumbnail isPublic updatedAt")
         .lean(),
-      Board.countDocuments({ ownerId: ctx.session.user.id }),
+      Board.countDocuments(filter),
     ]);
 
     return {
@@ -34,6 +54,7 @@ export const boardsRouter = createTRPCRouter({
         id: board._id.toString(),
         title: board.title,
         thumbnail: board.thumbnail ?? null,
+        isPublic: board.isPublic ?? false,
         updatedAt: board.updatedAt,
       })),
       total,
@@ -73,6 +94,29 @@ export const boardsRouter = createTRPCRouter({
     return { id: board._id.toString() };
   }),
 
+  duplicate: protectedProcedure.input(boardIdSchema).mutation(async ({ ctx, input }) => {
+    const source = await Board.findOne({
+      _id: input.id,
+      ownerId: ctx.session.user.id,
+    }).lean();
+
+    if (!source) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Board not found" });
+    }
+
+    const title = `${source.title} (copy)`.slice(0, 120);
+
+    const board = await Board.create({
+      ownerId: ctx.session.user.id,
+      title,
+      snapshot: source.snapshot,
+      thumbnail: source.thumbnail ?? null,
+      isPublic: false,
+    });
+
+    return { id: board._id.toString() };
+  }),
+
   get: protectedProcedure.input(boardIdSchema).query(async ({ ctx, input }) => {
     const board = await Board.findOne({
       _id: input.id,
@@ -88,7 +132,7 @@ export const boardsRouter = createTRPCRouter({
       title: board.title,
       snapshot: board.snapshot,
       thumbnail: board.thumbnail ?? null,
-      rev: board.updatedAt.toISOString(),
+      rev: board.rev ?? 0,
       isPublic: board.isPublic ?? false,
     };
   }),
@@ -98,11 +142,14 @@ export const boardsRouter = createTRPCRouter({
       {
         _id: input.id,
         ownerId: ctx.session.user.id,
-        ...(input.force ? {} : { updatedAt: new Date(input.rev) }),
+        rev: input.rev === 0 ? { $in: [0, null] } : input.rev,
       },
       {
         $set: {
           snapshot: input.snapshot,
+        },
+        $inc: {
+          rev: 1,
         },
       },
       { returnDocument: "after" }
@@ -121,7 +168,7 @@ export const boardsRouter = createTRPCRouter({
       });
     }
 
-    return { id: board._id.toString(), rev: board.updatedAt.toISOString() };
+    return { id: board._id.toString(), rev: board.rev ?? 0 };
   }),
 
   rename: protectedProcedure.input(renameBoardSchema).mutation(async ({ ctx, input }) => {

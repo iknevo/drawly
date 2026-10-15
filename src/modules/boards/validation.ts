@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { SORT_VALUES } from "@/modules/boards/lib/list-params";
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from "@/modules/boards/lib/pagination";
 import { TEMPLATE_IDS } from "@/modules/boards/lib/templates";
 
@@ -10,6 +11,8 @@ export const boardIdSchema = z.object({
 export const listBoardsSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(Number(DEFAULT_PAGE_SIZE)),
+  q: z.string().trim().max(100).default(""),
+  sort: z.enum(SORT_VALUES).default("updated"),
 });
 
 const boardTitle = z.string().trim().min(1, "Title is required").max(120, "Title is too long");
@@ -44,6 +47,5 @@ export const saveBoardSchema = boardIdSchema.extend({
     (value) => JSON.stringify(value).length <= MAX_SNAPSHOT_BYTES,
     "Board is too large to save"
   ),
-  rev: z.string().min(1),
-  force: z.boolean().optional(),
+  rev: z.coerce.number().int().min(0),
 });

@@ -30,13 +30,13 @@ const MAX_RETRY_DELAY = 30_000;
 export type SaveStatus = "saved" | "dirty" | "saving" | "error" | "offline";
 
 export type QuickdrawCanvasHandle = {
-  reloadRemote: () => Promise<void>;
+  flush: () => Promise<void>;
 };
 
 type QuickdrawCanvasProps = {
   boardId: string;
   snapshot: unknown;
-  rev: string;
+  rev: number;
   title?: string;
   thumbnail?: string | null;
   onStatus?: (status: SaveStatus) => void;
@@ -131,7 +131,7 @@ export function QuickdrawCanvas({
     setThumbnailRef.current = setThumbnail.mutate;
   });
 
-  const flushRef = useRef<(options?: { forceRev?: boolean }) => Promise<void>>(async () => {});
+  const flushRef = useRef<() => Promise<void>>(async () => {});
 
   const captureThumbnail = useCallback(async (): Promise<string | null | undefined> => {
     const editor = qdRef.current?.editor;
@@ -212,83 +212,98 @@ export function QuickdrawCanvas({
 
   const reloadRemote = useCallback(async () => {
     try {
-      const fresh = await queryClient.query(trpc.boards.get.queryOptions({ id: boardId }));
+      const fresh = await queryClient.query({
+        ...trpc.boards.get.queryOptions({ id: boardId }),
+        staleTime: 0,
+      });
       revRef.current = fresh.rev;
       store.loadSnapshot(fresh.snapshot as Parameters<Store["loadSnapshot"]>[0], "remote");
       dirtyRef.current = false;
       attemptRef.current = 0;
       reportStatus("saved");
+      return true;
     } catch {
       reportStatus("error");
+      return false;
     }
   }, [boardId, queryClient, reportStatus, store, trpc]);
 
-  const flush = useCallback(
-    async (options: { forceRev?: boolean } = {}) => {
-      const forceRev = options.forceRev ?? false;
+  const flush = useCallback(async () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
 
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-        timerRef.current = null;
-      }
-      if (retryTimerRef.current) {
-        clearTimeout(retryTimerRef.current);
-        retryTimerRef.current = null;
-      }
+    if (flushingRef.current) return;
+    if (!dirtyRef.current) return;
+    if (!onlineRef.current) {
+      reportStatus("offline");
+      return;
+    }
 
-      if (flushingRef.current) return;
-      if (!dirtyRef.current && !forceRev) return;
-      if (!onlineRef.current) {
-        reportStatus("offline");
+    dirtyRef.current = false;
+    flushingRef.current = true;
+    reportStatus("saving");
+
+    let retry = false;
+
+    try {
+      const result = await saveRef.current({
+        id: boardId,
+        snapshot: store.getSnapshot(),
+        rev: revRef.current,
+      });
+
+      revRef.current = result.rev;
+      attemptRef.current = 0;
+      reportStatus("saved");
+    } catch (error) {
+      const code = (error as { data?: { code?: string } } | null)?.data?.code;
+
+      if (code === "CONFLICT") {
+        const reloaded = await reloadRemote();
+        if (!reloaded) {
+          dirtyRef.current = true;
+          reportStatus("error");
+          if (!unmountedRef.current) {
+            toast.add({
+              type: "error",
+              description: "Couldn't load the latest version. Your changes are still here.",
+            });
+          }
+          return;
+        }
+        if (!unmountedRef.current) {
+          toast.add({
+            type: "info",
+            description: "This board changed elsewhere. Reloaded the latest version.",
+          });
+        }
         return;
       }
 
-      dirtyRef.current = false;
-      flushingRef.current = true;
-      reportStatus("saving");
-
-      let retry = false;
-
-      try {
-        const result = await saveRef.current({
-          id: boardId,
-          snapshot: store.getSnapshot(),
-          rev: revRef.current,
-          ...(forceRev ? { force: true } : {}),
-        });
-
-        revRef.current = result.rev;
-        attemptRef.current = 0;
-        reportStatus("saved");
-      } catch (error) {
-        const code = (error as { data?: { code?: string } } | null)?.data?.code;
-
-        if (code === "CONFLICT") {
-          dirtyRef.current = false;
-          await reloadRemote();
-          return;
-        }
-
-        dirtyRef.current = true;
-        reportStatus(onlineRef.current ? "error" : "offline");
-        if (!unmountedRef.current) {
-          toast.add({ type: "error", description: "Couldn't save your board. Retrying…" });
-        }
-        retry = true;
-      } finally {
-        flushingRef.current = false;
+      dirtyRef.current = true;
+      reportStatus(onlineRef.current ? "error" : "offline");
+      if (!unmountedRef.current) {
+        toast.add({ type: "error", description: "Couldn't save your board. Retrying…" });
       }
+      retry = true;
+    } finally {
+      flushingRef.current = false;
+    }
 
-      if (retry) scheduleRetry();
-    },
-    [boardId, reloadRemote, reportStatus, scheduleRetry, store]
-  );
+    if (retry) scheduleRetry();
+  }, [boardId, reloadRemote, reportStatus, scheduleRetry, store]);
 
   useEffect(() => {
     flushRef.current = flush;
   }, [flush]);
 
-  useImperativeHandle(ref, () => ({ reloadRemote }), [reloadRemote]);
+  useImperativeHandle(ref, () => ({ flush }), [flush]);
 
   const handleChange = useCallback(
     (_diff: Diff, source: DiffSource) => {
@@ -343,6 +358,7 @@ export function QuickdrawCanvas({
   }, []);
 
   useEffect(() => {
+    unmountedRef.current = false;
     const onVisibility = () => {
       if (document.visibilityState !== "hidden") return;
       void flushRef.current();

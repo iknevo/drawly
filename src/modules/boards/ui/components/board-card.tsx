@@ -3,8 +3,16 @@
 import type { boardsListItem } from "../../types/types";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
-import { LayoutGridIcon, MoreHorizontalIcon, PencilIcon, Trash2Icon } from "lucide-react";
+import {
+  CopyIcon,
+  GlobeIcon,
+  LayoutGridIcon,
+  MoreHorizontalIcon,
+  PencilIcon,
+  Trash2Icon,
+} from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import {
@@ -34,6 +42,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/toast";
 
 import { useTRPC } from "@/trpc/client";
@@ -58,6 +67,7 @@ interface BoardCardProps {
 
 export function BoardCard({ data }: BoardCardProps) {
   const trpc = useTRPC();
+  const router = useRouter();
   const queryClient = useQueryClient();
 
   const [renameTarget, setRenameTarget] = useState<{ id: string; title: string } | null>(null);
@@ -78,6 +88,16 @@ export function BoardCard({ data }: BoardCardProps) {
       onSuccess: async () => {
         await queryClient.invalidateQueries(trpc.boards.list.queryFilter());
         setDeleteOpen(false);
+      },
+      onError: (error) => toast.add({ type: "error", description: error.message }),
+    })
+  );
+
+  const duplicateBoard = useMutation(
+    trpc.boards.duplicate.mutationOptions({
+      onSuccess: async ({ id }) => {
+        await queryClient.invalidateQueries(trpc.boards.list.queryFilter());
+        router.push(`/board/${id}`);
       },
       onError: (error) => toast.add({ type: "error", description: error.message }),
     })
@@ -105,8 +125,14 @@ export function BoardCard({ data }: BoardCardProps) {
         </Link>
         <div className="flex items-start justify-between gap-2 px-3">
           <div className="min-w-0">
-            <Link href={`/board/${data.id}`} className="block truncate font-medium">
-              {data.title}
+            <Link href={`/board/${data.id}`} className="flex items-center gap-1.5">
+              <span className="truncate font-medium">{data.title}</span>
+              {data.isPublic && (
+                <GlobeIcon
+                  className="text-muted-foreground size-3.5 shrink-0"
+                  aria-label="Public board"
+                />
+              )}
             </Link>
             <p className="text-muted-foreground text-xs">
               Edited {formatDistanceToNow(new Date(data.updatedAt), { addSuffix: true })}
@@ -126,6 +152,13 @@ export function BoardCard({ data }: BoardCardProps) {
               >
                 <PencilIcon />
                 Rename
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={duplicateBoard.isPending}
+                onClick={() => duplicateBoard.mutate({ id: data.id })}
+              >
+                <CopyIcon />
+                Duplicate
               </DropdownMenuItem>
               <DropdownMenuItem variant="destructive" onClick={() => setDeleteOpen(true)}>
                 <Trash2Icon />
@@ -147,13 +180,24 @@ export function BoardCard({ data }: BoardCardProps) {
             <DialogTitle>Rename board</DialogTitle>
             <DialogDescription>Give your board a new name.</DialogDescription>
           </DialogHeader>
-          <Input
-            value={renameTarget?.title ?? ""}
-            autoFocus
-            onChange={(event) => {
-              setRenameTarget((prev) => (prev ? { ...prev, title: event.target.value } : prev));
-            }}
-          />
+          <div className="grid gap-2">
+            <Label htmlFor="board-name">Name</Label>
+            <Input
+              id="board-name"
+              value={renameTarget?.title ?? ""}
+              autoFocus
+              maxLength={120}
+              onChange={(event) => {
+                setRenameTarget((prev) => (prev ? { ...prev, title: event.target.value } : prev));
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && renameTarget?.title.trim() && !renameBoard.isPending) {
+                  event.preventDefault();
+                  renameBoard.mutate({ id: renameTarget.id, title: renameTarget.title.trim() });
+                }
+              }}
+            />
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setRenameTarget(null)}>
               Cancel

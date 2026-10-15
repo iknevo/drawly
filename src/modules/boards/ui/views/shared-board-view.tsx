@@ -5,6 +5,7 @@ import { useBoardCamera } from "../hooks/use-board-camera";
 import { type GridId, Quickdraw, type QuickdrawRef, Store, THEMES } from "@quickdrawjs/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "@teispace/next-themes";
+import { formatDistanceToNow } from "date-fns";
 import { Copy } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -23,10 +24,17 @@ type SharedBoardViewProps = {
   boardId: string;
   title: string;
   snapshot: unknown;
+  updatedAt: Date;
   signedIn: boolean;
 };
 
-export function SharedBoardView({ boardId, title, snapshot, signedIn }: SharedBoardViewProps) {
+export function SharedBoardView({
+  boardId,
+  title,
+  snapshot,
+  updatedAt,
+  signedIn,
+}: SharedBoardViewProps) {
   const router = useRouter();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -92,6 +100,9 @@ export function SharedBoardView({ boardId, title, snapshot, signedIn }: SharedBo
     <div className="flex min-h-0 flex-1 flex-col">
       <HeaderActions slot="title">
         <span className="truncate text-sm font-medium">{title}</span>
+        <span className="text-muted-foreground ml-2 hidden text-xs sm:inline">
+          Edited {formatDistanceToNow(new Date(updatedAt), { addSuffix: true })}
+        </span>
       </HeaderActions>
       <HeaderActions slot="actions">
         <Link href="/boards" className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}>

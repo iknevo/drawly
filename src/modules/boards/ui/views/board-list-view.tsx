@@ -1,5 +1,6 @@
 "use client";
 
+import { type BoardSort } from "../../lib/list-params";
 import {
   PAGE_SIZE_VALUES,
   type PageSize,
@@ -36,12 +37,14 @@ import {
   NotebookTextIcon,
   PlusIcon,
   Repeat2Icon,
+  SearchIcon,
   SquarePenIcon,
   WaypointsIcon,
   WorkflowIcon,
+  XIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 
 import { ErrorState } from "@/components/error-state";
@@ -54,6 +57,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { Input } from "@/components/ui/input";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -175,59 +179,106 @@ function NewBoardMenu({
   );
 }
 
-function BoardsListSkeleton() {
+function BoardsToolbar() {
+  const [{ size, q, sort }, setParams] = useBoardListParams();
+
+  const [search, setSearch] = useState(q);
+  const [syncedQ, setSyncedQ] = useState(q);
+
+  if (q !== syncedQ) {
+    setSyncedQ(q);
+    setSearch(q);
+  }
+
+  useEffect(() => {
+    if (search === q) return;
+    const timer = setTimeout(() => {
+      void setParams({ q: search.trim(), page: 1 });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search, q, setParams]);
+
+  const clearSearch = () => {
+    setSearch("");
+    void setParams({ q: "", page: 1 });
+  };
+
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 p-6 lg:p-10">
-      <div className="flex items-center justify-between">
-        <div className="space-y-2">
-          <div className="bg-muted h-8 w-48 animate-pulse rounded" />
-          <div className="bg-muted h-4 w-64 animate-pulse rounded" />
-        </div>
-        <div className="bg-muted h-10 w-32 animate-pulse rounded-md" />
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="relative w-full max-w-xs">
+        <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
+        <Input
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Search boards…"
+          aria-label="Search boards"
+          className="pl-8"
+        />
+        {search.length > 0 && (
+          <button
+            type="button"
+            onClick={clearSearch}
+            aria-label="Clear search"
+            className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2 -translate-y-1/2"
+          >
+            <XIcon className="size-4" />
+          </button>
+        )}
       </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {Array.from({ length: 8 }).map((_, index) => (
-          <BoardCardSkeleton key={index} />
-        ))}
+      <div className="flex items-center gap-2">
+        <span className="text-muted-foreground text-sm">Sort</span>
+        <Select
+          value={sort}
+          onValueChange={(value) => {
+            void setParams({ sort: value as BoardSort, page: 1 });
+          }}
+        >
+          <SelectTrigger size="sm" aria-label="Sort boards">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent alignItemWithTrigger={false} align="end">
+            <SelectItem value="updated">Last edited</SelectItem>
+            <SelectItem value="created">Recently created</SelectItem>
+            <SelectItem value="title">Title (A–Z)</SelectItem>
+          </SelectContent>
+        </Select>
+        <span className="text-muted-foreground text-sm">Per page</span>
+        <Select
+          value={size}
+          onValueChange={(value) => {
+            void setParams({ size: value as PageSize, page: 1 });
+          }}
+        >
+          <SelectTrigger size="sm" aria-label="Boards per page">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {PAGE_SIZE_VALUES.map((value) => (
+              <SelectItem key={value} value={value}>
+                {value}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );
 }
 
-export function BoardListView() {
+function BoardsGridSkeleton() {
   return (
-    <Suspense fallback={<BoardsListSkeleton />}>
-      <ErrorBoundary
-        fallbackRender={({ resetErrorBoundary }) => <ErrorState onRetry={resetErrorBoundary} />}
-      >
-        <BoardListViewSuspense />
-      </ErrorBoundary>
-    </Suspense>
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {Array.from({ length: 8 }).map((_, index) => (
+        <BoardCardSkeleton key={index} />
+      ))}
+    </div>
   );
 }
 
-function BoardListViewSuspense() {
+export function BoardListView() {
   const router = useRouter();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-
-  const [{ page, size }, setParams] = useBoardListParams();
-  const pageSize = Number(size);
-
-  const { data } = useSuspenseQuery(
-    trpc.boards.list.queryOptions({ page, pageSize }, { placeholderData: keepPreviousData })
-  );
-
-  const { items, total } = data;
-  const totalPages = getTotalPages(total, pageSize);
-  const rangeStart = total === 0 ? 0 : (page - 1) * pageSize + 1;
-  const rangeEnd = Math.min(page * pageSize, total);
-
-  useEffect(() => {
-    if (total > 0 && page > totalPages) {
-      void setParams({ page: totalPages }, { history: "replace" });
-    }
-  }, [page, total, totalPages, setParams]);
 
   const createBoard = useMutation(
     trpc.boards.create.mutationOptions({
@@ -241,10 +292,6 @@ function BoardListViewSuspense() {
 
   const handleCreate = (template?: TemplateId) => {
     createBoard.mutate(template ? { template } : {});
-  };
-
-  const goToPage = (next: number) => {
-    void setParams({ page: next });
   };
 
   return (
@@ -265,103 +312,153 @@ function BoardListViewSuspense() {
         </div>
       </header>
 
-      {total === 0 ? (
-        <Empty className="py-20">
-          <EmptyHeader>
-            <EmptyMedia>
-              <GhostIcon className="size-10" />
-            </EmptyMedia>
-            <EmptyTitle>No boards yet</EmptyTitle>
-            <EmptyDescription>Create your first board to start drawing.</EmptyDescription>
-          </EmptyHeader>
-          <NewBoardMenu disabled={createBoard.isPending} onCreate={handleCreate} />
-        </Empty>
-      ) : (
-        <>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-muted-foreground text-sm">
-              Showing {rangeStart}&ndash;{rangeEnd} of {total} {total === 1 ? "board" : "boards"}
-            </p>
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground text-sm">Per page</span>
-              <Select
-                value={size}
-                onValueChange={(value) => {
-                  void setParams({ size: value as PageSize, page: 1 });
-                }}
-              >
-                <SelectTrigger size="sm" aria-label="Boards per page">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PAGE_SIZE_VALUES.map((value) => (
-                    <SelectItem key={value} value={value}>
-                      {value}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+      <BoardsToolbar />
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {items.map((board) => (
-              <BoardCard key={board.id} data={board} />
-            ))}
-          </div>
-
-          {totalPages > 1 && (
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious
-                    href={pageHref(page - 1, size)}
-                    aria-disabled={page <= 1}
-                    className={cn(page <= 1 && "pointer-events-none opacity-50")}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      if (page > 1) goToPage(page - 1);
-                    }}
-                  />
-                </PaginationItem>
-
-                {getPageItems(page, totalPages).map((item, index) =>
-                  typeof item === "number" ? (
-                    <PaginationItem key={item}>
-                      <PaginationLink
-                        href={pageHref(item, size)}
-                        isActive={item === page}
-                        onClick={(event) => {
-                          event.preventDefault();
-                          goToPage(item);
-                        }}
-                      >
-                        {item}
-                      </PaginationLink>
-                    </PaginationItem>
-                  ) : (
-                    <PaginationItem key={`${item}-${index}`}>
-                      <PaginationEllipsis />
-                    </PaginationItem>
-                  )
-                )}
-
-                <PaginationItem>
-                  <PaginationNext
-                    href={pageHref(page + 1, size)}
-                    aria-disabled={page >= totalPages}
-                    className={cn(page >= totalPages && "pointer-events-none opacity-50")}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      if (page < totalPages) goToPage(page + 1);
-                    }}
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          )}
-        </>
-      )}
+      <Suspense fallback={<BoardsGridSkeleton />}>
+        <ErrorBoundary
+          fallbackRender={({ resetErrorBoundary }) => <ErrorState onRetry={resetErrorBoundary} />}
+        >
+          <BoardsContent onCreate={handleCreate} creating={createBoard.isPending} />
+        </ErrorBoundary>
+      </Suspense>
     </div>
+  );
+}
+
+function BoardsContent({
+  onCreate,
+  creating,
+}: {
+  onCreate: (template?: TemplateId) => void;
+  creating: boolean;
+}) {
+  const trpc = useTRPC();
+
+  const [{ page, size, q, sort }, setParams] = useBoardListParams();
+  const pageSize = Number(size);
+
+  const { data } = useSuspenseQuery(
+    trpc.boards.list.queryOptions(
+      { page, pageSize, q, sort },
+      { placeholderData: keepPreviousData }
+    )
+  );
+
+  const { items, total } = data;
+  const totalPages = getTotalPages(total, pageSize);
+  const rangeStart = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const rangeEnd = Math.min(page * pageSize, total);
+  const searching = q.trim().length > 0;
+  const filters = { q, sort };
+
+  useEffect(() => {
+    if (total > 0 && page > totalPages) {
+      void setParams({ page: totalPages }, { history: "replace" });
+    }
+  }, [page, total, totalPages, setParams]);
+
+  const goToPage = (next: number) => {
+    void setParams({ page: next });
+  };
+
+  const clearSearch = () => {
+    void setParams({ q: "", page: 1 });
+  };
+
+  if (total === 0 && !searching) {
+    return (
+      <Empty className="py-20">
+        <EmptyHeader>
+          <EmptyMedia>
+            <GhostIcon className="size-10" />
+          </EmptyMedia>
+          <EmptyTitle>No boards yet</EmptyTitle>
+          <EmptyDescription>Create your first board to start drawing.</EmptyDescription>
+        </EmptyHeader>
+        <NewBoardMenu disabled={creating} onCreate={onCreate} />
+      </Empty>
+    );
+  }
+
+  if (total === 0) {
+    return (
+      <Empty className="py-20">
+        <EmptyHeader>
+          <EmptyMedia>
+            <SearchIcon className="size-10" />
+          </EmptyMedia>
+          <EmptyTitle>No boards match &ldquo;{q}&rdquo;</EmptyTitle>
+          <EmptyDescription>Try a different search term.</EmptyDescription>
+        </EmptyHeader>
+        <Button variant="outline" onClick={clearSearch}>
+          Clear search
+        </Button>
+      </Empty>
+    );
+  }
+
+  return (
+    <>
+      <p className="text-muted-foreground text-sm">
+        Showing {rangeStart}&ndash;{rangeEnd} of {total} {total === 1 ? "board" : "boards"}
+      </p>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {items.map((board) => (
+          <BoardCard key={board.id} data={board} />
+        ))}
+      </div>
+
+      {totalPages > 1 && (
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                href={pageHref(page - 1, size, filters)}
+                aria-disabled={page <= 1}
+                className={cn(page <= 1 && "pointer-events-none opacity-50")}
+                onClick={(event) => {
+                  event.preventDefault();
+                  if (page > 1) goToPage(page - 1);
+                }}
+              />
+            </PaginationItem>
+
+            {getPageItems(page, totalPages).map((item, index) =>
+              typeof item === "number" ? (
+                <PaginationItem key={item}>
+                  <PaginationLink
+                    href={pageHref(item, size, filters)}
+                    isActive={item === page}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      goToPage(item);
+                    }}
+                  >
+                    {item}
+                  </PaginationLink>
+                </PaginationItem>
+              ) : (
+                <PaginationItem key={`${item}-${index}`}>
+                  <PaginationEllipsis />
+                </PaginationItem>
+              )
+            )}
+
+            <PaginationItem>
+              <PaginationNext
+                href={pageHref(page + 1, size, filters)}
+                aria-disabled={page >= totalPages}
+                className={cn(page >= totalPages && "pointer-events-none opacity-50")}
+                onClick={(event) => {
+                  event.preventDefault();
+                  if (page < totalPages) goToPage(page + 1);
+                }}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
+    </>
   );
 }

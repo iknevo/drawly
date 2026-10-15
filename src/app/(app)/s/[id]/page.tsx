@@ -45,6 +45,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
       boardId={id}
       title={board.title}
       snapshot={board.snapshot}
+      updatedAt={board.updatedAt}
       signedIn={!!session}
     />
   );

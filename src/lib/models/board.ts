@@ -4,6 +4,7 @@ const boardSchema = new mongoose.Schema(
   {
     ownerId: { type: String, required: true },
     title: { type: String, default: "Untitled board" },
+    rev: { type: Number, default: 0 },
     snapshot: {
       type: mongoose.Schema.Types.Mixed,
       default: () => ({ document: { store: {} } }),
