@@ -10,6 +10,7 @@ import {
   renameBoardSchema,
   saveBoardSchema,
   setBoardPublicSchema,
+  setThumbnailSchema,
 } from "@/modules/boards/validation";
 import { baseProcedure, createTRPCRouter, protectedProcedure } from "@/trpc/init";
 
@@ -71,7 +72,6 @@ export const boardsRouter = createTRPCRouter({
       {
         $set: {
           snapshot: input.snapshot,
-          ...(input.thumbnail !== undefined ? { thumbnail: input.thumbnail } : {}),
         },
       },
       { returnDocument: "after" }
@@ -132,6 +132,20 @@ export const boardsRouter = createTRPCRouter({
     }
 
     return { id: board._id.toString(), isPublic: board.isPublic ?? false };
+  }),
+
+  setThumbnail: protectedProcedure.input(setThumbnailSchema).mutation(async ({ ctx, input }) => {
+    const board = await Board.findOneAndUpdate(
+      { _id: input.id, ownerId: ctx.session.user.id },
+      { $set: { thumbnail: input.thumbnail } },
+      { returnDocument: "after", timestamps: false }
+    ).lean();
+
+    if (!board) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Board not found" });
+    }
+
+    return { id: board._id.toString(), thumbnail: board.thumbnail ?? null };
   }),
 
   getShared: baseProcedure.input(boardIdSchema).query(async ({ input }) => {

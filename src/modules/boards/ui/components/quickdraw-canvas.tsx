@@ -20,7 +20,10 @@ import { CanvasControls } from "./canvas-controls";
 import { useTRPC } from "@/trpc/client";
 
 const SAVE_DELAY = 1000;
-const THUMBNAIL_INTERVAL = 2000;
+const THUMBNAIL_DELAY = 2000;
+const THUMBNAIL_MAX_W = 400;
+const THUMBNAIL_MAX_H = 300;
+const THUMBNAIL_MARGIN = 48;
 const ZOOM_K = 0.012;
 const MAX_RETRY_DELAY = 30_000;
 
@@ -36,24 +39,17 @@ type QuickdrawCanvasProps = {
   snapshot: unknown;
   rev: string;
   title?: string;
+  thumbnail?: string | null;
   onStatus?: (status: SaveStatus) => void;
   ref?: React.Ref<QuickdrawCanvasHandle>;
 };
-
-async function blobToDataURL(blob: Blob): Promise<string> {
-  return await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(blob);
-  });
-}
 
 export function QuickdrawCanvas({
   boardId,
   snapshot,
   rev,
   title,
+  thumbnail,
   onStatus,
   ref,
 }: QuickdrawCanvasProps) {
@@ -71,6 +67,13 @@ export function QuickdrawCanvas({
   }, [boardId]);
 
   const save = useMutation(trpc.boards.save.mutationOptions());
+  const setThumbnail = useMutation(
+    trpc.boards.setThumbnail.mutationOptions({
+      onSuccess: () => {
+        void queryClient.invalidateQueries(trpc.boards.list.queryOptions());
+      },
+    })
+  );
 
   const onStatusRef = useRef(onStatus);
   useEffect(() => {
@@ -113,7 +116,9 @@ export function QuickdrawCanvas({
   const conflictRef = useRef(false);
   const unmountedRef = useRef(false);
   const thumbnailRef = useRef<string | null | undefined>(undefined);
-  const lastThumbnailAtRef = useRef(0);
+  const thumbnailTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sendingThumbnailRef = useRef(false);
+  const seededRef = useRef(false);
 
   const reportStatus = useCallback((status: SaveStatus) => {
     statusRef.current = status;
@@ -125,20 +130,71 @@ export function QuickdrawCanvas({
     saveRef.current = save.mutateAsync;
   });
 
-  const flushRef = useRef<
-    (options?: { forceRev?: boolean; forceThumbnail?: boolean }) => Promise<void>
-  >(async () => {});
+  const setThumbnailRef = useRef(setThumbnail.mutate);
+  useEffect(() => {
+    setThumbnailRef.current = setThumbnail.mutate;
+  });
+
+  const flushRef = useRef<(options?: { forceRev?: boolean }) => Promise<void>>(async () => {});
 
   const captureThumbnail = useCallback(async (): Promise<string | null | undefined> => {
     const editor = qdRef.current?.editor;
     if (!editor) return undefined;
     try {
-      const blob = await editor.exportImage({ background: true, scale: 0.25 });
-      return blob ? await blobToDataURL(blob) : null;
+      if (typeof document !== "undefined" && document.fonts) {
+        await document.fonts.ready;
+      }
+      const bounds = editor.contentBounds();
+      if (!bounds || bounds.w <= 0 || bounds.h <= 0) return null;
+      const scale = Math.min(
+        THUMBNAIL_MAX_W / (bounds.w + THUMBNAIL_MARGIN * 2),
+        THUMBNAIL_MAX_H / (bounds.h + THUMBNAIL_MARGIN * 2)
+      );
+      if (!Number.isFinite(scale) || scale <= 0) return null;
+      const blob = await editor.exportImage({ background: true, scale });
+      if (!blob) return null;
+      const bitmap = await createImageBitmap(blob);
+      const canvas = document.createElement("canvas");
+      canvas.width = bitmap.width;
+      canvas.height = bitmap.height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        bitmap.close();
+        return undefined;
+      }
+      ctx.drawImage(bitmap, 0, 0);
+      bitmap.close();
+      const dataUrl = canvas.toDataURL("image/webp", 0.7);
+      return dataUrl && dataUrl !== "data:," ? dataUrl : null;
     } catch {
       return undefined;
     }
   }, []);
+
+  const sendThumbnail = useCallback(async () => {
+    if (sendingThumbnailRef.current) return;
+    sendingThumbnailRef.current = true;
+    try {
+      const captured = await captureThumbnail();
+      if (!captured || captured === thumbnailRef.current) return;
+      thumbnailRef.current = captured;
+      setThumbnailRef.current({ id: boardId, thumbnail: captured });
+    } finally {
+      sendingThumbnailRef.current = false;
+    }
+  }, [boardId, captureThumbnail]);
+
+  const sendThumbnailRef = useRef(sendThumbnail);
+  useEffect(() => {
+    sendThumbnailRef.current = sendThumbnail;
+  }, [sendThumbnail]);
+
+  const scheduleThumbnail = useCallback(() => {
+    if (thumbnailTimerRef.current) clearTimeout(thumbnailTimerRef.current);
+    thumbnailTimerRef.current = setTimeout(() => {
+      void sendThumbnail();
+    }, THUMBNAIL_DELAY);
+  }, [sendThumbnail]);
 
   const scheduleSave = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -159,9 +215,8 @@ export function QuickdrawCanvas({
   }, []);
 
   const flush = useCallback(
-    async (options: { forceRev?: boolean; forceThumbnail?: boolean } = {}) => {
+    async (options: { forceRev?: boolean } = {}) => {
       const forceRev = options.forceRev ?? false;
-      const forceThumbnail = options.forceThumbnail ?? false;
 
       if (timerRef.current) {
         clearTimeout(timerRef.current);
@@ -190,18 +245,9 @@ export function QuickdrawCanvas({
       let retry = false;
 
       try {
-        if (forceThumbnail || Date.now() - lastThumbnailAtRef.current >= THUMBNAIL_INTERVAL) {
-          const captured = await captureThumbnail();
-          if (captured !== undefined) {
-            thumbnailRef.current = captured;
-            lastThumbnailAtRef.current = Date.now();
-          }
-        }
-
         const result = await saveRef.current({
           id: boardId,
           snapshot: store.getSnapshot(),
-          thumbnail: thumbnailRef.current,
           rev: revRef.current,
           ...(forceRev ? { force: true } : {}),
         });
@@ -238,7 +284,7 @@ export function QuickdrawCanvas({
 
       if (retry) scheduleRetry();
     },
-    [boardId, captureThumbnail, reportStatus, scheduleRetry, store]
+    [boardId, reportStatus, scheduleRetry, store]
   );
 
   useEffect(() => {
@@ -262,7 +308,8 @@ export function QuickdrawCanvas({
   const overwrite = useCallback(async () => {
     conflictRef.current = false;
     dirtyRef.current = true;
-    await flushRef.current({ forceRev: true, forceThumbnail: true });
+    await flushRef.current({ forceRev: true });
+    void sendThumbnailRef.current();
   }, []);
 
   useImperativeHandle(ref, () => ({ reloadRemote, overwrite }), [reloadRemote, overwrite]);
@@ -277,9 +324,16 @@ export function QuickdrawCanvas({
       dirtyRef.current = true;
       reportStatus("dirty");
       scheduleSave();
+      scheduleThumbnail();
     },
-    [reportStatus, scheduleSave]
+    [reportStatus, scheduleSave, scheduleThumbnail]
   );
+
+  useEffect(() => {
+    if (seededRef.current) return;
+    seededRef.current = true;
+    if (thumbnail == null) void sendThumbnailRef.current();
+  }, [thumbnail]);
 
   useEffect(() => {
     onlineRef.current = navigator.onLine;
@@ -310,7 +364,6 @@ export function QuickdrawCanvas({
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
       if (dirtyRef.current || flushingRef.current) {
         event.preventDefault();
-        event.returnValue = "";
       }
     };
     window.addEventListener("beforeunload", onBeforeUnload);
@@ -353,7 +406,9 @@ export function QuickdrawCanvas({
 
   useEffect(() => {
     const onVisibility = () => {
-      if (document.visibilityState === "hidden") void flushRef.current({ forceThumbnail: true });
+      if (document.visibilityState !== "hidden") return;
+      void flushRef.current();
+      void sendThumbnailRef.current();
     };
     window.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("pagehide", onVisibility);
@@ -364,7 +419,9 @@ export function QuickdrawCanvas({
       unmountedRef.current = true;
       if (timerRef.current) clearTimeout(timerRef.current);
       if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
-      void flushRef.current({ forceThumbnail: true });
+      if (thumbnailTimerRef.current) clearTimeout(thumbnailTimerRef.current);
+      void flushRef.current();
+      void sendThumbnailRef.current();
     };
   }, []);
 

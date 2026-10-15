@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 
 import { auth } from "@/lib/auth";
+
 import { SharedBoardView } from "@/modules/boards/ui/views/shared-board-view";
 import { caller } from "@/trpc/server";
 

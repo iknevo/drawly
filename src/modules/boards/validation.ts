@@ -21,6 +21,10 @@ export const setBoardPublicSchema = boardIdSchema.extend({
   isPublic: z.boolean(),
 });
 
+export const setThumbnailSchema = boardIdSchema.extend({
+  thumbnail: z.string().max(2_000_000).nullable(),
+});
+
 const MAX_SNAPSHOT_BYTES = 15_000_000;
 
 const snapshotSchema = z.object({
@@ -34,7 +38,6 @@ export const saveBoardSchema = boardIdSchema.extend({
     (value) => JSON.stringify(value).length <= MAX_SNAPSHOT_BYTES,
     "Board is too large to save"
   ),
-  thumbnail: z.string().max(2_000_000).nullable().optional(),
   rev: z.string().min(1),
   force: z.boolean().optional(),
 });
