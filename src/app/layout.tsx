@@ -1,6 +1,7 @@
 import "@quickdrawjs/core/quickdraw.css";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { Geist_Mono, Inter } from "next/font/google";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 import { cn } from "@/lib/utils";
 
@@ -30,15 +31,17 @@ export default function RootLayout({
       className={cn("antialiased", fontMono.variable, "font-sans", inter.variable)}
     >
       <body>
-        <TRPCReactProvider>
-          <ThemeProvider>
-            <TooltipProvider>
-              <main>{children}</main>
-              <Toaster />
-              <ReactQueryDevtools initialIsOpen={false} />
-            </TooltipProvider>
-          </ThemeProvider>
-        </TRPCReactProvider>
+        <NuqsAdapter>
+          <TRPCReactProvider>
+            <ThemeProvider>
+              <TooltipProvider>
+                <main>{children}</main>
+                <Toaster />
+                <ReactQueryDevtools initialIsOpen={false} />
+              </TooltipProvider>
+            </ThemeProvider>
+          </TRPCReactProvider>
+        </NuqsAdapter>
       </body>
     </html>
   );

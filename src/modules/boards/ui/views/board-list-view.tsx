@@ -1,13 +1,27 @@
 "use client";
 
 import {
+  PAGE_SIZE_VALUES,
+  type PageSize,
+  getPageItems,
+  getTotalPages,
+  pageHref,
+} from "../../lib/pagination";
+import {
   TEMPLATE_CATEGORIES,
   TEMPLATE_DESCRIPTIONS,
   TEMPLATE_LABELS,
   type TemplateId,
 } from "../../lib/templates";
 import { BoardCard, BoardCardSkeleton } from "../components/board-card";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useBoardListParams } from "../hooks/use-board-list-params";
+import {
+  keepPreviousData,
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
+import { cn } from "cn";
 import {
   CalendarDaysIcon,
   Columns3Icon,
@@ -27,7 +41,7 @@ import {
   WorkflowIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 
 import { ErrorState } from "@/components/error-state";
@@ -47,6 +61,22 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "@/components/ui/toast";
 
 import { useTRPC } from "@/trpc/client";
@@ -180,13 +210,29 @@ function BoardListViewSuspense() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
-  const { data: boards } = useSuspenseQuery(trpc.boards.list.queryOptions());
+  const [{ page, size }, setParams] = useBoardListParams();
+  const pageSize = Number(size);
+
+  const { data } = useSuspenseQuery(
+    trpc.boards.list.queryOptions({ page, pageSize }, { placeholderData: keepPreviousData })
+  );
+
+  const { items, total } = data;
+  const totalPages = getTotalPages(total, pageSize);
+  const rangeStart = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const rangeEnd = Math.min(page * pageSize, total);
+
+  useEffect(() => {
+    if (total > 0 && page > totalPages) {
+      void setParams({ page: totalPages }, { history: "replace" });
+    }
+  }, [page, total, totalPages, setParams]);
 
   const createBoard = useMutation(
     trpc.boards.create.mutationOptions({
       onSuccess: async ({ id }) => {
         router.push(`/board/${id}`);
-        await queryClient.invalidateQueries(trpc.boards.list.queryOptions());
+        await queryClient.invalidateQueries(trpc.boards.list.queryFilter());
       },
       onError: (error) => toast.add({ type: "error", description: error.message }),
     })
@@ -194,6 +240,10 @@ function BoardListViewSuspense() {
 
   const handleCreate = (template?: TemplateId) => {
     createBoard.mutate(template ? { template } : {});
+  };
+
+  const goToPage = (next: number) => {
+    void setParams({ page: next });
   };
 
   return (
@@ -211,7 +261,7 @@ function BoardListViewSuspense() {
         />
       </header>
 
-      {boards.length === 0 ? (
+      {total === 0 ? (
         <Empty className="py-20">
           <EmptyHeader>
             <EmptyMedia>
@@ -223,11 +273,90 @@ function BoardListViewSuspense() {
           <NewBoardMenu disabled={createBoard.isPending} onCreate={handleCreate} />
         </Empty>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {boards.map((board) => (
-            <BoardCard key={board.id} data={board} />
-          ))}
-        </div>
+        <>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-muted-foreground text-sm">
+              Showing {rangeStart}&ndash;{rangeEnd} of {total} {total === 1 ? "board" : "boards"}
+            </p>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground text-sm">Per page</span>
+              <Select
+                value={size}
+                onValueChange={(value) => {
+                  void setParams({ size: value as PageSize, page: 1 });
+                }}
+              >
+                <SelectTrigger size="sm" aria-label="Boards per page">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAGE_SIZE_VALUES.map((value) => (
+                    <SelectItem key={value} value={value}>
+                      {value}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {items.map((board) => (
+              <BoardCard key={board.id} data={board} />
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href={pageHref(page - 1, size)}
+                    aria-disabled={page <= 1}
+                    className={cn(page <= 1 && "pointer-events-none opacity-50")}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      if (page > 1) goToPage(page - 1);
+                    }}
+                  />
+                </PaginationItem>
+
+                {getPageItems(page, totalPages).map((item, index) =>
+                  typeof item === "number" ? (
+                    <PaginationItem key={item}>
+                      <PaginationLink
+                        href={pageHref(item, size)}
+                        isActive={item === page}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          goToPage(item);
+                        }}
+                      >
+                        {item}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ) : (
+                    <PaginationItem key={`${item}-${index}`}>
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                  )
+                )}
+
+                <PaginationItem>
+                  <PaginationNext
+                    href={pageHref(page + 1, size)}
+                    aria-disabled={page >= totalPages}
+                    className={cn(page >= totalPages && "pointer-events-none opacity-50")}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      if (page < totalPages) goToPage(page + 1);
+                    }}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
+        </>
       )}
     </div>
   );

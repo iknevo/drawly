@@ -1,6 +1,6 @@
 "use client";
 
-import type { boardsListOutput } from "../../types/types";
+import type { boardsListItem } from "../../types/types";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { LayoutGridIcon, MoreHorizontalIcon, PencilIcon, Trash2Icon } from "lucide-react";
@@ -53,7 +53,7 @@ export function BoardCardSkeleton() {
 }
 
 interface BoardCardProps {
-  data: boardsListOutput[number];
+  data: boardsListItem;
 }
 
 export function BoardCard({ data }: BoardCardProps) {
@@ -66,7 +66,7 @@ export function BoardCard({ data }: BoardCardProps) {
   const renameBoard = useMutation(
     trpc.boards.rename.mutationOptions({
       onSuccess: async () => {
-        await queryClient.invalidateQueries(trpc.boards.list.queryOptions());
+        await queryClient.invalidateQueries(trpc.boards.list.queryFilter());
         setRenameTarget(null);
       },
       onError: (error) => toast.add({ type: "error", description: error.message }),
@@ -76,7 +76,7 @@ export function BoardCard({ data }: BoardCardProps) {
   const removeBoard = useMutation(
     trpc.boards.remove.mutationOptions({
       onSuccess: async () => {
-        await queryClient.invalidateQueries(trpc.boards.list.queryOptions());
+        await queryClient.invalidateQueries(trpc.boards.list.queryFilter());
         setDeleteOpen(false);
       },
       onError: (error) => toast.add({ type: "error", description: error.message }),

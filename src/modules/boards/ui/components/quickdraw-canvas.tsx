@@ -70,7 +70,7 @@ export function QuickdrawCanvas({
   const setThumbnail = useMutation(
     trpc.boards.setThumbnail.mutationOptions({
       onSuccess: () => {
-        void queryClient.invalidateQueries(trpc.boards.list.queryOptions());
+        void queryClient.invalidateQueries(trpc.boards.list.queryFilter());
       },
     })
   );

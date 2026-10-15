@@ -1,9 +1,15 @@
 import { z } from "zod";
 
+import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from "@/modules/boards/lib/pagination";
 import { TEMPLATE_IDS } from "@/modules/boards/lib/templates";
 
 export const boardIdSchema = z.object({
   id: z.string().regex(/^[a-f0-9]{24}$/i, "Invalid board id"),
+});
+
+export const listBoardsSchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(Number(DEFAULT_PAGE_SIZE)),
 });
 
 const boardTitle = z.string().trim().min(1, "Title is required").max(120, "Title is too long");

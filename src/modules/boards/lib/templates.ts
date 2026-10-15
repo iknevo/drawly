@@ -37,7 +37,7 @@ export const TEMPLATE_DESCRIPTIONS: Record<TemplateId, string> = {
   roadmap: "Timeline of milestones",
   retro: "Start, stop, continue",
   eisenhower: "Urgent vs important",
-  swot: "Strengths, weaknesses, opportunities, threats",
+  swot: "Strength, weakness, opportunity, threat",
   mindmap: "Ideas branching from a center",
   flowchart: "Steps, decisions, and arrows",
   bubblemap: "Cluster ideas around a topic",

@@ -7,6 +7,7 @@ import { TEMPLATE_SNAPSHOTS } from "@/modules/boards/server/templates";
 import {
   boardIdSchema,
   createBoardSchema,
+  listBoardsSchema,
   renameBoardSchema,
   saveBoardSchema,
   setBoardPublicSchema,
@@ -15,18 +16,30 @@ import {
 import { baseProcedure, createTRPCRouter, protectedProcedure } from "@/trpc/init";
 
 export const boardsRouter = createTRPCRouter({
-  list: protectedProcedure.query(async ({ ctx }) => {
-    const boards = await Board.find({ ownerId: ctx.session.user.id })
-      .sort({ updatedAt: -1 })
-      .select("title thumbnail updatedAt")
-      .lean();
+  list: protectedProcedure.input(listBoardsSchema).query(async ({ ctx, input }) => {
+    const { page, pageSize } = input;
 
-    return boards.map((board) => ({
-      id: board._id.toString(),
-      title: board.title,
-      thumbnail: board.thumbnail ?? null,
-      updatedAt: board.updatedAt,
-    }));
+    const [boards, total] = await Promise.all([
+      Board.find({ ownerId: ctx.session.user.id })
+        .sort({ updatedAt: -1 })
+        .skip((page - 1) * pageSize)
+        .limit(pageSize)
+        .select("title thumbnail updatedAt")
+        .lean(),
+      Board.countDocuments({ ownerId: ctx.session.user.id }),
+    ]);
+
+    return {
+      items: boards.map((board) => ({
+        id: board._id.toString(),
+        title: board.title,
+        thumbnail: board.thumbnail ?? null,
+        updatedAt: board.updatedAt,
+      })),
+      total,
+      page,
+      pageSize,
+    };
   }),
 
   create: protectedProcedure.input(createBoardSchema).mutation(async ({ ctx, input }) => {
