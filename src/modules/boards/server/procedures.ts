@@ -2,6 +2,8 @@ import { TRPCError } from "@trpc/server";
 
 import { Board } from "@/lib/models/board";
 
+import { TEMPLATE_LABELS } from "@/modules/boards/lib/templates";
+import { TEMPLATE_SNAPSHOTS } from "@/modules/boards/server/templates";
 import {
   boardIdSchema,
   createBoardSchema,
@@ -27,9 +29,13 @@ export const boardsRouter = createTRPCRouter({
   }),
 
   create: protectedProcedure.input(createBoardSchema).mutation(async ({ ctx, input }) => {
+    const template = input.template ? TEMPLATE_SNAPSHOTS[input.template] : undefined;
+    const title = input.title ?? (input.template ? TEMPLATE_LABELS[input.template] : undefined);
+
     const board = await Board.create({
       ownerId: ctx.session.user.id,
-      title: input.title,
+      ...(title ? { title } : {}),
+      ...(template ? { snapshot: template } : {}),
     });
 
     return { id: board._id.toString() };

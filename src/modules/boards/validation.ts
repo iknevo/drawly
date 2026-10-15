@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { TEMPLATE_IDS } from "@/modules/boards/lib/templates";
+
 export const boardIdSchema = z.object({
   id: z.string().regex(/^[a-f0-9]{24}$/i, "Invalid board id"),
 });
@@ -8,6 +10,7 @@ const boardTitle = z.string().trim().min(1, "Title is required").max(120, "Title
 
 export const createBoardSchema = z.object({
   title: boardTitle.optional(),
+  template: z.enum(TEMPLATE_IDS).optional(),
 });
 
 export const renameBoardSchema = boardIdSchema.extend({

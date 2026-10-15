@@ -1,8 +1,31 @@
 "use client";
 
+import {
+  TEMPLATE_CATEGORIES,
+  TEMPLATE_DESCRIPTIONS,
+  TEMPLATE_LABELS,
+  type TemplateId,
+} from "../../lib/templates";
 import { BoardCard, BoardCardSkeleton } from "../components/board-card";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { GhostIcon, PlusIcon } from "lucide-react";
+import {
+  CalendarDaysIcon,
+  Columns3Icon,
+  GhostIcon,
+  Grid2x2Icon,
+  LayoutGridIcon,
+  LayoutTemplateIcon,
+  ListChecksIcon,
+  type LucideIcon,
+  MilestoneIcon,
+  NetworkIcon,
+  NotebookTextIcon,
+  PlusIcon,
+  Repeat2Icon,
+  SquarePenIcon,
+  WaypointsIcon,
+  WorkflowIcon,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
@@ -16,9 +39,110 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from "@/components/ui/navigation-menu";
 import { toast } from "@/components/ui/toast";
 
 import { useTRPC } from "@/trpc/client";
+
+const TEMPLATE_ICONS: Record<TemplateId, LucideIcon> = {
+  checklist: ListChecksIcon,
+  kanban: Columns3Icon,
+  weekly: CalendarDaysIcon,
+  roadmap: MilestoneIcon,
+  retro: Repeat2Icon,
+  eisenhower: Grid2x2Icon,
+  swot: LayoutGridIcon,
+  mindmap: NetworkIcon,
+  flowchart: WorkflowIcon,
+  bubblemap: WaypointsIcon,
+  cornell: NotebookTextIcon,
+  wireframe: LayoutTemplateIcon,
+};
+
+function NewBoardMenu({
+  size,
+  disabled,
+  onCreate,
+  align = "start",
+}: {
+  size?: "sm" | "default" | "lg";
+  disabled: boolean;
+  onCreate: (template?: TemplateId) => void;
+  align?: "start" | "center" | "end";
+}) {
+  return (
+    <NavigationMenu align={align} className="flex-none">
+      <NavigationMenuList>
+        <NavigationMenuItem>
+          <NavigationMenuTrigger
+            disabled={disabled}
+            render={<Button size={size} variant="outline" disabled={disabled} />}
+          >
+            <PlusIcon />
+            New board
+          </NavigationMenuTrigger>
+          <NavigationMenuContent>
+            <div className="w-140 p-3">
+              <NavigationMenuLink
+                closeOnClick
+                render={
+                  <button type="button" onClick={() => onCreate()} className="w-full gap-2.5" />
+                }
+              >
+                <SquarePenIcon />
+                <span className="flex flex-col items-start gap-0.5">
+                  <span className="font-medium">Blank board</span>
+                  <span className="text-muted-foreground text-xs">Start from an empty canvas</span>
+                </span>
+              </NavigationMenuLink>
+
+              {TEMPLATE_CATEGORIES.map((category) => (
+                <section key={category.id}>
+                  <div className="text-muted-foreground px-2 pt-3 pb-1 text-xs font-medium">
+                    {category.label}
+                  </div>
+                  <div className="grid grid-cols-2 gap-0.5">
+                    {category.templates.map((id) => {
+                      const Icon = TEMPLATE_ICONS[id];
+                      return (
+                        <NavigationMenuLink
+                          key={id}
+                          closeOnClick
+                          render={
+                            <button
+                              type="button"
+                              onClick={() => onCreate(id)}
+                              className="gap-2.5"
+                            />
+                          }
+                        >
+                          <Icon />
+                          <span className="flex flex-col items-start gap-0.5">
+                            <span className="font-medium">{TEMPLATE_LABELS[id]}</span>
+                            <span className="text-muted-foreground text-xs">
+                              {TEMPLATE_DESCRIPTIONS[id]}
+                            </span>
+                          </span>
+                        </NavigationMenuLink>
+                      );
+                    })}
+                  </div>
+                </section>
+              ))}
+            </div>
+          </NavigationMenuContent>
+        </NavigationMenuItem>
+      </NavigationMenuList>
+    </NavigationMenu>
+  );
+}
 
 function BoardsListSkeleton() {
   return (
@@ -68,6 +192,10 @@ function BoardListViewSuspense() {
     })
   );
 
+  const handleCreate = (template?: TemplateId) => {
+    createBoard.mutate(template ? { template } : {});
+  };
+
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 p-6 lg:p-10">
       <header className="flex items-center justify-between">
@@ -75,10 +203,12 @@ function BoardListViewSuspense() {
           <h1 className="text-3xl font-medium">Your boards</h1>
           <p className="text-muted-foreground text-sm">Sketch ideas on an infinite canvas.</p>
         </div>
-        <Button size="lg" disabled={createBoard.isPending} onClick={() => createBoard.mutate({})}>
-          <PlusIcon />
-          New board
-        </Button>
+        <NewBoardMenu
+          size="lg"
+          align="end"
+          disabled={createBoard.isPending}
+          onCreate={handleCreate}
+        />
       </header>
 
       {boards.length === 0 ? (
@@ -90,10 +220,7 @@ function BoardListViewSuspense() {
             <EmptyTitle>No boards yet</EmptyTitle>
             <EmptyDescription>Create your first board to start drawing.</EmptyDescription>
           </EmptyHeader>
-          <Button onClick={() => createBoard.mutate({})}>
-            <PlusIcon />
-            New board
-          </Button>
+          <NewBoardMenu disabled={createBoard.isPending} onCreate={handleCreate} />
         </Empty>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
