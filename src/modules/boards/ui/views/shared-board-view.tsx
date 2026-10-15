@@ -13,6 +13,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { authHref } from "@/lib/auth-redirect";
 import { cn } from "@/lib/utils";
 
+import { HeaderActions } from "@/components/header-actions";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
 
@@ -88,30 +89,30 @@ export function SharedBoardView({ boardId, title, snapshot, signedIn }: SharedBo
   const cloneHref = authHref("/auth/sign-up", `/s/${boardId}`);
 
   return (
-    <div className="flex h-svh flex-col">
-      <header className="flex items-center gap-3 border-b px-3 py-2">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <HeaderActions slot="title">
         <span className="truncate text-sm font-medium">{title}</span>
-        <div className="ml-auto flex items-center gap-2">
-          <Link href="/boards" className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}>
-            Create your own
+      </HeaderActions>
+      <HeaderActions slot="actions">
+        <Link href="/boards" className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}>
+          Create your own
+        </Link>
+        {signedIn ? (
+          <Button
+            size="sm"
+            disabled={cloneBoard.isPending}
+            onClick={() => cloneBoard.mutate({ id: boardId })}
+          >
+            <Copy />
+            Clone to my boards
+          </Button>
+        ) : (
+          <Link href={cloneHref} className={cn(buttonVariants({ size: "sm" }))}>
+            <Copy />
+            Clone to my boards
           </Link>
-          {signedIn ? (
-            <Button
-              size="sm"
-              disabled={cloneBoard.isPending}
-              onClick={() => cloneBoard.mutate({ id: boardId })}
-            >
-              <Copy />
-              Clone to my boards
-            </Button>
-          ) : (
-            <Link href={cloneHref} className={cn(buttonVariants({ size: "sm" }))}>
-              <Copy />
-              Clone to my boards
-            </Link>
-          )}
-        </div>
-      </header>
+        )}
+      </HeaderActions>
 
       <div className="relative min-h-0 flex-1">
         <div ref={wrapperRef} className="relative h-full w-full overflow-hidden">

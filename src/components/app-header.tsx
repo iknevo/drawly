@@ -8,6 +8,7 @@ import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
+import { DevMenu } from "@/components/home/dev-menu";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -18,8 +19,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-import { DevMenu } from "./dev-menu";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -36,22 +35,24 @@ function ThemeToggle() {
       aria-label="Toggle theme"
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
     >
-      <SunIcon className={cn(resolvedTheme === "dark" ? "block" : "hidden")} />
-      <MoonIcon className={cn(resolvedTheme === "dark" ? "hidden" : "block")} />
+      {resolvedTheme === "dark" ? <SunIcon /> : <MoonIcon />}
     </Button>
   );
 }
 
-export function HomeHeader() {
+export function AppHeader() {
   const { data } = authClient.useSession();
 
   return (
-    <header className="flex h-16 items-center justify-between">
-      <Link href="/">
+    <header className="mx-auto flex h-16 w-full max-w-6xl shrink-0 items-center gap-3 px-6">
+      <Link href="/" className="shrink-0">
         <span className={cn("text-2xl font-semibold", poppins.className)}>Drawly</span>
       </Link>
 
-      <div className="flex items-center gap-2">
+      <div id="app-header-title" className="flex min-w-0 items-center gap-2" />
+
+      <div className="ml-auto flex shrink-0 items-center gap-2">
+        <div id="app-header-actions" className="flex items-center gap-2" />
         <ThemeToggle />
         <DevMenu />
         {data?.user ? (

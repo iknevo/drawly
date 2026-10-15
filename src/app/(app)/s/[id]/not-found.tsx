@@ -12,7 +12,7 @@ export const metadata = {
 
 export default function NotFound() {
   return (
-    <div className="flex h-svh flex-col items-center justify-center gap-6 px-6 text-center">
+    <div className="flex flex-1 flex-col items-center justify-center gap-6 px-6 text-center">
       <div className="bg-muted text-muted-foreground flex size-12 items-center justify-center rounded-full">
         <Link2OffIcon className="size-6" />
       </div>

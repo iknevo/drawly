@@ -45,6 +45,7 @@ import { Suspense, useEffect } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 
 import { ErrorState } from "@/components/error-state";
+import { HeaderActions } from "@/components/header-actions";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -248,17 +249,20 @@ function BoardListViewSuspense() {
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 p-6 lg:p-10">
+      <HeaderActions slot="actions">
+        <NewBoardMenu
+          size="sm"
+          align="end"
+          disabled={createBoard.isPending}
+          onCreate={handleCreate}
+        />
+      </HeaderActions>
+
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-medium">Your boards</h1>
           <p className="text-muted-foreground text-sm">Sketch ideas on an infinite canvas.</p>
         </div>
-        <NewBoardMenu
-          size="lg"
-          align="end"
-          disabled={createBoard.isPending}
-          onCreate={handleCreate}
-        />
       </header>
 
       {total === 0 ? (

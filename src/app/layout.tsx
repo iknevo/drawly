@@ -35,7 +35,7 @@ export default function RootLayout({
           <TRPCReactProvider>
             <ThemeProvider>
               <TooltipProvider>
-                <main>{children}</main>
+                {children}
                 <Toaster />
                 <ReactQueryDevtools initialIsOpen={false} />
               </TooltipProvider>
