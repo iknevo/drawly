@@ -1,6 +1,7 @@
 "use client";
 
 import type { GridId } from "@quickdrawjs/react";
+import { useTheme } from "@teispace/next-themes";
 import {
   DownloadIcon,
   Grid2x2Icon,
@@ -10,7 +11,6 @@ import {
   PlusIcon,
   SunIcon,
 } from "lucide-react";
-import { useTheme } from "next-themes";
 import { type ReactNode, useSyncExternalStore } from "react";
 
 import { Button } from "@/components/ui/button";

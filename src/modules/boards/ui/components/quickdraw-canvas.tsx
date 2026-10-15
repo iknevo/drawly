@@ -11,7 +11,7 @@ import {
   THEMES,
 } from "@quickdrawjs/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useTheme } from "next-themes";
+import { useTheme } from "@teispace/next-themes";
 import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 
 import { toast } from "@/components/ui/toast";

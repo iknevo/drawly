@@ -1,9 +1,10 @@
 "use client";
 
+import { useTheme } from "@teispace/next-themes";
 import { MoonIcon, SunIcon, UserIcon } from "lucide-react";
-import { useTheme } from "next-themes";
 import { Poppins } from "next/font/google";
 import Link from "next/link";
+import { useSyncExternalStore } from "react";
 
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
@@ -27,6 +28,13 @@ const poppins = Poppins({
 
 function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
+  const isMounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
+
+  if (!isMounted) return null;
 
   return (
     <Button
