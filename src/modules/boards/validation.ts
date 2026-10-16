@@ -1,7 +1,8 @@
 import { z } from "zod";
 
+import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from "@/lib/pagination";
+
 import { SORT_VALUES } from "@/modules/boards/lib/list-params";
-import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from "@/modules/boards/lib/pagination";
 import { TEMPLATE_IDS } from "@/modules/boards/lib/templates";
 
 export const boardIdSchema = z.object({

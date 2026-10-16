@@ -1,4 +1,4 @@
-import { DEFAULT_PAGE_SIZE, PAGE_SIZE_VALUES } from "@/modules/docs/lib/pagination";
+import { DEFAULT_PAGE_SIZE, PAGE_SIZE_VALUES } from "@/lib/pagination";
 
 export const SORT_VALUES = ["updated", "created", "title"] as const;
 

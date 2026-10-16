@@ -42,11 +42,10 @@ import { useTRPC } from "@/trpc/client";
 
 export function DocCardSkeleton() {
   return (
-    <Card size="sm" className="gap-3">
-      <div className="space-y-2 p-3">
+    <Card size="sm">
+      <div className="flex flex-col gap-2 px-3">
         <div className="bg-muted h-4 w-2/3 animate-pulse rounded" />
-        <div className="bg-muted h-3 w-full animate-pulse rounded" />
-        <div className="bg-muted h-3 w-4/5 animate-pulse rounded" />
+        <div className="bg-muted h-3 w-1/3 animate-pulse rounded" />
       </div>
     </Card>
   );
@@ -92,20 +91,17 @@ export function DocCard({ data }: { data: docsListItem }) {
 
   return (
     <>
-      <Card size="sm" className="gap-0">
-        <Link href={`/docs/${data.id}`} className="flex flex-col gap-2 p-3">
-          <span className="flex items-center gap-2">
-            <FileTextIcon className="text-muted-foreground size-4 shrink-0" />
-            <span className="truncate font-medium">{data.title}</span>
-          </span>
-          <span className="text-muted-foreground line-clamp-3 min-h-10 text-sm">
-            {data.excerpt || "Empty doc"}
-          </span>
-          <span className="text-muted-foreground text-xs">
-            edited {formatDistanceToNow(new Date(data.updatedAt), { addSuffix: true })}
-          </span>
-        </Link>
-        <div className="flex justify-end px-1.5 pb-1.5">
+      <Card size="sm">
+        <div className="flex items-start gap-2 px-3">
+          <Link href={`/docs/${data.id}`} className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span className="flex items-center gap-2">
+              <FileTextIcon className="text-muted-foreground size-4 shrink-0" />
+              <span className="truncate font-medium">{data.title}</span>
+            </span>
+            <span className="text-muted-foreground text-xs">
+              edited {formatDistanceToNow(new Date(data.updatedAt), { addSuffix: true })}
+            </span>
+          </Link>
           <DropdownMenu>
             <DropdownMenuTrigger
               render={<Button variant="ghost" size="icon-sm" aria-label="Doc actions" />}

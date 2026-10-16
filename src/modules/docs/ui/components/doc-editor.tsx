@@ -1,12 +1,15 @@
 "use client";
 
+import { createDocVimExtension, forceInsertMode } from "../lib/vim-mode";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { TaskItem } from "@tiptap/extension-task-item";
 import { TaskList } from "@tiptap/extension-task-list";
 import { Placeholder } from "@tiptap/extensions";
 import { type Content, EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useCallback, useEffect, useImperativeHandle, useRef } from "react";
+import { useCallback, useEffect, useImperativeHandle, useMemo, useRef } from "react";
+import type { Mode } from "vim-prosemirror";
+import { getVimMode } from "vim-prosemirror/tiptap";
 
 import { toast } from "@/components/ui/toast";
 
@@ -26,18 +29,29 @@ type DocEditorProps = {
   docId: string;
   content: unknown;
   rev: number;
+  vimEnabled?: boolean;
   onStatus?: (status: DocSaveStatus) => void;
+  onMode?: (mode: Mode) => void;
   ref?: React.Ref<DocEditorHandle>;
 };
 
-export function DocEditor({ docId, content, rev, onStatus, ref }: DocEditorProps) {
+export function DocEditor({
+  docId,
+  content,
+  rev,
+  vimEnabled = false,
+  onStatus,
+  onMode,
+  ref,
+}: DocEditorProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
   const save = useMutation(
     trpc.docs.save.mutationOptions({
-      onSuccess: () => {
+      onSuccess: (_result, variables) => {
         void queryClient.invalidateQueries(trpc.docs.list.queryFilter());
+        void queryClient.invalidateQueries(trpc.docs.get.queryFilter({ id: variables.id }));
       },
     })
   );
@@ -45,6 +59,11 @@ export function DocEditor({ docId, content, rev, onStatus, ref }: DocEditorProps
   const onStatusRef = useRef(onStatus);
   useEffect(() => {
     onStatusRef.current = onStatus;
+  });
+
+  const onModeRef = useRef(onMode);
+  useEffect(() => {
+    onModeRef.current = onMode;
   });
 
   const revRef = useRef(rev);
@@ -81,14 +100,20 @@ export function DocEditor({ docId, content, rev, onStatus, ref }: DocEditorProps
     scheduleSaveRef.current = scheduleSave;
   }, [scheduleSave]);
 
-  const editor = useEditor({
-    immediatelyRender: false,
-    extensions: [
+  const extensions = useMemo(
+    () => [
       StarterKit,
       Placeholder.configure({ placeholder: "Start writing…" }),
       TaskList,
       TaskItem.configure({ nested: true }),
+      createDocVimExtension(),
     ],
+    []
+  );
+
+  const editor = useEditor({
+    immediatelyRender: false,
+    extensions,
     content: content as Content,
     onUpdate: () => {
       dirtyRef.current = true;
@@ -97,9 +122,25 @@ export function DocEditor({ docId, content, rev, onStatus, ref }: DocEditorProps
     },
   });
 
-  const getExcerpt = useCallback((): string => {
-    const text = editor?.getText() ?? "";
-    return text.replace(/\s+/g, " ").trim().slice(0, 300);
+  useEffect(() => {
+    if (!editor) return;
+    if (vimEnabled) forceInsertMode(editor);
+    editor.view.dispatch(editor.state.tr);
+  }, [editor, vimEnabled]);
+
+  const lastModeRef = useRef<Mode | null>(null);
+  useEffect(() => {
+    if (!editor) return;
+    const report = () => {
+      const mode = getVimMode(editor);
+      if (mode === lastModeRef.current) return;
+      lastModeRef.current = mode;
+      onModeRef.current?.(mode);
+    };
+    editor.on("transaction", report);
+    return () => {
+      editor.off("transaction", report);
+    };
   }, [editor]);
 
   const scheduleRetry = useCallback(() => {
@@ -150,11 +191,6 @@ export function DocEditor({ docId, content, rev, onStatus, ref }: DocEditorProps
     }
   }, [docId, editor, queryClient, reportStatus, trpc]);
 
-  const getExcerptRef = useRef(getExcerpt);
-  useEffect(() => {
-    getExcerptRef.current = getExcerpt;
-  });
-
   const flush = useCallback(async () => {
     if (timerRef.current) {
       clearTimeout(timerRef.current);
@@ -183,7 +219,6 @@ export function DocEditor({ docId, content, rev, onStatus, ref }: DocEditorProps
       const result = await saveRef.current({
         id: docId,
         content: editor.getJSON(),
-        excerpt: getExcerptRef.current(),
         rev: revRef.current,
       });
 

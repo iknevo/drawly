@@ -42,7 +42,7 @@ export const docsRouter = createTRPCRouter({
         .sort(sortSpec)
         .skip((page - 1) * pageSize)
         .limit(pageSize)
-        .select("title excerpt updatedAt")
+        .select("title updatedAt")
         .lean(),
       Doc.countDocuments(filter),
     ]);
@@ -51,7 +51,6 @@ export const docsRouter = createTRPCRouter({
       items: docs.map((doc) => ({
         id: doc._id.toString(),
         title: doc.title,
-        excerpt: doc.excerpt ?? "",
         updatedAt: doc.updatedAt,
       })),
       total,
@@ -83,7 +82,6 @@ export const docsRouter = createTRPCRouter({
       id: doc._id.toString(),
       title: doc.title,
       content: doc.content ?? EMPTY_CONTENT,
-      excerpt: doc.excerpt ?? "",
       rev: doc.rev ?? 0,
     };
   }),
@@ -98,7 +96,6 @@ export const docsRouter = createTRPCRouter({
       {
         $set: {
           content: input.content,
-          excerpt: input.excerpt,
         },
         $inc: {
           rev: 1,
@@ -151,7 +148,6 @@ export const docsRouter = createTRPCRouter({
       ownerId: ctx.session.user.id,
       title: `${source.title} (copy)`.slice(0, 120),
       content: source.content ?? EMPTY_CONTENT,
-      excerpt: source.excerpt ?? "",
     });
 
     return { id: doc._id.toString() };

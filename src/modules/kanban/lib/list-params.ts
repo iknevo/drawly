@@ -1,4 +1,4 @@
-import { DEFAULT_PAGE_SIZE, PAGE_SIZE_VALUES } from "@/modules/kanban/lib/pagination";
+import { DEFAULT_PAGE_SIZE, PAGE_SIZE_VALUES } from "@/lib/pagination";
 
 export const KANBAN_SORT_VALUES = ["updated", "created", "title"] as const;
 

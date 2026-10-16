@@ -1,7 +1,8 @@
 import { z } from "zod";
 
+import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from "@/lib/pagination";
+
 import { SORT_VALUES } from "@/modules/docs/lib/list-params";
-import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from "@/modules/docs/lib/pagination";
 
 export const docIdSchema = z.object({
   id: z.string().regex(/^[a-f0-9]{24}$/i, "Invalid doc id"),
@@ -32,6 +33,5 @@ const contentSchema = z
 
 export const saveDocSchema = docIdSchema.extend({
   content: contentSchema,
-  excerpt: z.string().trim().max(500).default(""),
   rev: z.coerce.number().int().min(0),
 });

@@ -1,13 +1,7 @@
 "use client";
 
 import { type BoardSort } from "../../lib/list-params";
-import {
-  PAGE_SIZE_VALUES,
-  type PageSize,
-  getPageItems,
-  getTotalPages,
-  pageHref,
-} from "../../lib/pagination";
+import { pageHref } from "../../lib/pagination";
 import {
   TEMPLATE_CATEGORIES,
   TEMPLATE_DESCRIPTIONS,
@@ -46,6 +40,8 @@ import {
 import { useRouter } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
+
+import { PAGE_SIZE_VALUES, type PageSize, getPageItems, getTotalPages } from "@/lib/pagination";
 
 import { ErrorState } from "@/components/error-state";
 import { HeaderActions } from "@/components/header-actions";

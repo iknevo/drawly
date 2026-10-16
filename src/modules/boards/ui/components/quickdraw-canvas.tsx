@@ -65,7 +65,14 @@ export function QuickdrawCanvas({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [boardId]);
 
-  const save = useMutation(trpc.boards.save.mutationOptions());
+  const save = useMutation(
+    trpc.boards.save.mutationOptions({
+      onSuccess: (_result, variables) => {
+        void queryClient.invalidateQueries(trpc.boards.list.queryFilter());
+        void queryClient.invalidateQueries(trpc.boards.get.queryFilter({ id: variables.id }));
+      },
+    })
+  );
   const setThumbnail = useMutation(
     trpc.boards.setThumbnail.mutationOptions({
       onSuccess: () => {

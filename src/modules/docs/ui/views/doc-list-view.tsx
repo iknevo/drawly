@@ -13,6 +13,8 @@ import { useRouter } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 
+import { PAGE_SIZE_VALUES, type PageSize, getPageItems, getTotalPages } from "@/lib/pagination";
+
 import { ErrorState } from "@/components/error-state";
 import { HeaderActions } from "@/components/header-actions";
 import { Button } from "@/components/ui/button";
@@ -43,13 +45,7 @@ import {
 import { toast } from "@/components/ui/toast";
 
 import type { DocSort } from "@/modules/docs/lib/list-params";
-import {
-  PAGE_SIZE_VALUES,
-  type PageSize,
-  getPageItems,
-  getTotalPages,
-  pageHref,
-} from "@/modules/docs/lib/pagination";
+import { pageHref } from "@/modules/docs/lib/pagination";
 import { useDocListParams } from "@/modules/docs/ui/hooks/use-doc-list-params";
 import { useTRPC } from "@/trpc/client";
 

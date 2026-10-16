@@ -1,7 +1,8 @@
 import { z } from "zod";
 
+import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from "@/lib/pagination";
+
 import { KANBAN_SORT_VALUES } from "@/modules/kanban/lib/list-params";
-import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from "@/modules/kanban/lib/pagination";
 
 export const kanbanBoardIdSchema = z.object({
   id: z.string().regex(/^[a-f0-9]{24}$/i, "Invalid board id"),

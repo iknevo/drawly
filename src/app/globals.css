@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "vim-prosemirror/style.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -192,4 +193,31 @@
 
 .dark .qd-root[data-qd-theme="dark"] {
   background: var(--background);
+}
+
+/* vim-prosemirror ships light-only colors; make its UI theme-aware. */
+.doc-editor .vim-block-cursor,
+.doc-editor .vim-block-cursor-eol {
+  background: var(--foreground);
+  color: var(--background);
+}
+.doc-editor .vim-visual-selection,
+.doc-editor .vim-visual-selection-line {
+  background: color-mix(in oklab, var(--primary) 30%, transparent);
+}
+.doc-editor .vim-search-bar {
+  background: var(--muted);
+  border-top-color: var(--border);
+  color: var(--foreground);
+}
+.doc-editor .vim-search-prefix,
+.doc-editor .vim-search-input,
+.doc-editor .vim-search-cursor {
+  color: var(--foreground);
+}
+.doc-editor .vim-search-match {
+  background: color-mix(in oklab, var(--primary) 30%, transparent);
+}
+.doc-editor .vim-search-match-current {
+  background: color-mix(in oklab, var(--primary) 55%, transparent);
 }

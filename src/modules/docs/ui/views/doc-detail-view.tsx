@@ -1,11 +1,13 @@
 "use client";
 
 import { DocEditor, type DocEditorHandle, type DocSaveStatus } from "../components/doc-editor";
+import { setVimEnabled, useVimEnabled } from "../lib/vim-mode";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeftIcon, MoreHorizontalIcon, Trash2Icon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
+import type { Mode } from "vim-prosemirror";
 
 import {
   AlertDialog,
@@ -38,6 +40,14 @@ const STATUS_LABEL: Record<DocSaveStatus, string> = {
   offline: "Offline",
 };
 
+const MODE_LABEL: Record<Mode, string> = {
+  normal: "NORMAL",
+  insert: "INSERT",
+  replace: "REPLACE",
+  visual: "VISUAL",
+  "visual-line": "V-LINE",
+};
+
 export function DocDetailView({ docId }: { docId: string }) {
   const trpc = useTRPC();
   const router = useRouter();
@@ -48,9 +58,15 @@ export function DocDetailView({ docId }: { docId: string }) {
 
   const editorRef = useRef<DocEditorHandle>(null);
   const [status, setStatus] = useState<DocSaveStatus>("saved");
+  const vimEnabled = useVimEnabled();
+  const [vimMode, setVimMode] = useState<Mode>("insert");
   const [editing, setEditing] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
   const [deleteOpen, setDeleteOpen] = useState(false);
+
+  const toggleVim = () => {
+    setVimEnabled(!vimEnabled);
+  };
 
   const renameDoc = useMutation(
     trpc.docs.rename.mutationOptions({
@@ -161,7 +177,27 @@ export function DocDetailView({ docId }: { docId: string }) {
           </button>
         )}
 
-        <span className="text-muted-foreground ml-auto text-xs">{STATUS_LABEL[status]}</span>
+        <div className="ml-auto flex items-center gap-2">
+          <Button
+            variant={vimEnabled ? "secondary" : "ghost"}
+            size="xs"
+            aria-pressed={vimEnabled}
+            aria-label="Toggle vim mode"
+            title="Vim mode"
+            onClick={toggleVim}
+            className="font-mono tracking-wider"
+          >
+            VIM
+          </Button>
+
+          {vimEnabled ? (
+            <span data-vim-mode={vimMode} className="text-muted-foreground font-mono text-xs">
+              -- {MODE_LABEL[vimMode]} --
+            </span>
+          ) : null}
+
+          <span className="text-muted-foreground text-xs">{STATUS_LABEL[status]}</span>
+        </div>
 
         <DropdownMenu>
           <DropdownMenuTrigger
@@ -184,7 +220,9 @@ export function DocDetailView({ docId }: { docId: string }) {
         docId={data.id}
         content={data.content}
         rev={data.rev}
+        vimEnabled={vimEnabled}
         onStatus={setStatus}
+        onMode={setVimMode}
       />
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
