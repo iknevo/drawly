@@ -44,27 +44,29 @@ export function KanbanCardShell({
       </button>
       <button
         type="button"
-        className="focus-visible:ring-ring min-w-0 flex-1 rounded text-left focus-visible:ring-2 focus-visible:outline-none"
+        className="focus-visible:ring-ring flex min-w-0 flex-1 items-center gap-2 rounded text-left focus-visible:ring-2 focus-visible:outline-none"
         onClick={() => onOpen?.(card)}
       >
-        <p className="font-medium wrap-break-word">{card.title}</p>
-        {card.description ? (
-          <p className="text-muted-foreground mt-0.5 line-clamp-2 text-xs wrap-break-word">
-            {card.description}
-          </p>
+        <div className="min-w-0 flex-1">
+          <p className="font-medium wrap-break-word">{card.title}</p>
+          {card.description ? (
+            <p className="text-muted-foreground mt-0.5 line-clamp-2 text-xs wrap-break-word">
+              {card.description}
+            </p>
+          ) : null}
+        </div>
+        {card.dueDate ? (
+          <span
+            className={cn(
+              "inline-flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 text-xs ring-1",
+              getDueStyle(card.dueDate)
+            )}
+          >
+            <CalendarDaysIcon className="size-3" />
+            {formatDueDate(card.dueDate)}
+          </span>
         ) : null}
       </button>
-      {card.dueDate ? (
-        <span
-          className={cn(
-            "inline-flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 text-xs ring-1",
-            getDueStyle(card.dueDate)
-          )}
-        >
-          <CalendarDaysIcon className="size-3" />
-          {formatDueDate(card.dueDate)}
-        </span>
-      ) : null}
     </div>
   );
 }
