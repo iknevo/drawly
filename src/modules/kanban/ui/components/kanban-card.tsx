@@ -11,7 +11,6 @@ import type { kanbanCard } from "@/modules/kanban/types/types";
 type KanbanCardProps = {
   card: kanbanCard;
   onOpen: (card: kanbanCard) => void;
-  disabled?: boolean;
 };
 
 export function KanbanCardShell({
@@ -70,10 +69,9 @@ export function KanbanCardShell({
   );
 }
 
-export function KanbanCard({ card, onOpen, disabled }: KanbanCardProps) {
+export function KanbanCard({ card, onOpen }: KanbanCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: card.id,
-    disabled,
   });
 
   const style: React.CSSProperties = {

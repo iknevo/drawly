@@ -26,7 +26,7 @@ import {
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "cn";
-import { ArrowLeftIcon, MoreHorizontalIcon, SearchIcon, Trash2Icon, XIcon } from "lucide-react";
+import { ArrowLeftIcon, MoreHorizontalIcon, Trash2Icon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
@@ -72,7 +72,6 @@ export function KanbanBoardView({ boardId }: { boardId: string }) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeWidth, setActiveWidth] = useState<number | null>(null);
   const [openCardId, setOpenCardId] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
   const dragSnapshot = useRef<kanbanColumn[] | null>(null);
 
   const sensors = useSensors(
@@ -81,9 +80,6 @@ export function KanbanBoardView({ boardId }: { boardId: string }) {
   );
 
   const readColumns = (): kanbanColumn[] => queryClient.getQueryData(boardKey)?.columns ?? [];
-
-  const query = search.trim().toLowerCase();
-  const searching = query.length > 0;
 
   const renameBoard = useMutation(
     trpc.kanban.rename.mutationOptions({
@@ -316,7 +312,6 @@ export function KanbanBoardView({ boardId }: { boardId: string }) {
   }
 
   function handleDragStart(event: DragStartEvent) {
-    if (searching) return;
     const id = String(event.active.id);
     const node = document.querySelector<HTMLElement>(`[data-card-id="${id}"]`);
     setActiveWidth(node ? node.getBoundingClientRect().width : null);
@@ -325,7 +320,6 @@ export function KanbanBoardView({ boardId }: { boardId: string }) {
   }
 
   function handleDragOver(event: DragOverEvent) {
-    if (searching) return;
     const { active, over } = event;
     if (!over) return;
     const activeCardId = String(active.id);
@@ -340,13 +334,6 @@ export function KanbanBoardView({ boardId }: { boardId: string }) {
   }
 
   function handleDragEnd(event: DragEndEvent) {
-    if (searching) {
-      setActiveId(null);
-      setActiveWidth(null);
-      dragSnapshot.current = null;
-      return;
-    }
-
     const { active, over } = event;
     setActiveId(null);
     setActiveWidth(null);
@@ -421,19 +408,6 @@ export function KanbanBoardView({ boardId }: { boardId: string }) {
   const activeCard = activeId ? findCardById(columns, activeId) : null;
   const openCard = openCardId ? findCardById(columns, openCardId) : null;
 
-  const displayColumns = searching
-    ? columns.map((column) => ({
-        ...column,
-        cards: column.cards.filter(
-          (card) =>
-            card.title.toLowerCase().includes(query) ||
-            card.description.toLowerCase().includes(query)
-        ),
-      }))
-    : columns;
-  const visibleCards = displayColumns.reduce((total, column) => total + column.cards.length, 0);
-  const totalCards = columns.reduce((total, column) => total + column.cards.length, 0);
-
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <HeaderActions slot="title">
@@ -497,34 +471,6 @@ export function KanbanBoardView({ boardId }: { boardId: string }) {
         </DropdownMenu>
       </HeaderActions>
 
-      <div className="flex items-center gap-3 border-b px-3 py-2">
-        <div className="relative w-full max-w-xs">
-          <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
-          <Input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search cards…"
-            aria-label="Search cards"
-            className="pl-8"
-          />
-          {search.length > 0 ? (
-            <button
-              type="button"
-              onClick={() => setSearch("")}
-              aria-label="Clear search"
-              className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2 -translate-y-1/2"
-            >
-              <XIcon className="size-4" />
-            </button>
-          ) : null}
-        </div>
-        {searching ? (
-          <span className="text-muted-foreground text-xs">
-            {visibleCards} of {totalCards} {totalCards === 1 ? "card" : "cards"}
-          </span>
-        ) : null}
-      </div>
-
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
@@ -537,13 +483,11 @@ export function KanbanBoardView({ boardId }: { boardId: string }) {
           className={cn("flex min-h-0 flex-1 overflow-x-auto p-4", activeId && "cursor-grabbing")}
         >
           <div className="mx-auto flex w-full max-w-6xl items-stretch gap-4">
-            {displayColumns.map((column) => (
+            {columns.map((column) => (
               <KanbanColumn
                 key={column.id}
                 column={column}
                 creating={createCard.isPending}
-                disabled={searching}
-                searching={searching}
                 onOpenCard={(card) => setOpenCardId(card.id)}
                 onCreateCard={(columnId, title) =>
                   createCard.mutate({ id: boardId, columnId, title })
