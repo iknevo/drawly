@@ -126,7 +126,7 @@ function KanbanToolbar() {
           <SelectTrigger size="sm" aria-label="Boards per page">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent alignItemWithTrigger={false} align="end">
             {PAGE_SIZE_VALUES.map((value) => (
               <SelectItem key={value} value={value}>
                 {value}

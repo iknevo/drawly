@@ -34,7 +34,7 @@ export function KanbanColumn({ column, creating, onOpenCard, onCreateCard }: Kan
   }
 
   return (
-    <section className="bg-muted/40 flex min-w-72 flex-1 flex-col rounded-xl">
+    <section className="bg-muted/50 flex min-w-72 flex-1 flex-col rounded-xl">
       <header className="flex items-center justify-between gap-2 px-3 py-2.5">
         <div className="flex min-w-0 items-center gap-2">
           <span aria-hidden className={cn("size-2 shrink-0 rounded-full", status.dot)} />

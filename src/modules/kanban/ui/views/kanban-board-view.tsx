@@ -31,7 +31,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
-import { HeaderActions } from "@/components/header-actions";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -409,8 +408,8 @@ export function KanbanBoardView({ boardId }: { boardId: string }) {
   const openCard = openCardId ? findCardById(columns, openCardId) : null;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <HeaderActions slot="title">
+    <div className="flex h-svh flex-col">
+      <header className="flex items-center gap-3 border-b px-3 py-2">
         <Link
           href="/kanban"
           className={buttonVariants({ variant: "ghost", size: "icon-sm" })}
@@ -453,23 +452,23 @@ export function KanbanBoardView({ boardId }: { boardId: string }) {
             {data.title}
           </button>
         )}
-      </HeaderActions>
 
-      <HeaderActions slot="actions">
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={<Button variant="ghost" size="icon-sm" aria-label="Board actions" />}
-          >
-            <MoreHorizontalIcon />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem variant="destructive" onClick={() => setDeleteOpen(true)}>
-              <Trash2Icon />
-              Delete board
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </HeaderActions>
+        <div className="ml-auto flex items-center gap-3">
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={<Button variant="ghost" size="icon-sm" aria-label="Board actions" />}
+            >
+              <MoreHorizontalIcon />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem variant="destructive" onClick={() => setDeleteOpen(true)}>
+                <Trash2Icon />
+                Delete board
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </header>
 
       <DndContext
         sensors={sensors}
