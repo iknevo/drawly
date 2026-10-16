@@ -1,4 +1,4 @@
-import { LayoutGridIcon, type LucideIcon, PencilRulerIcon, ShapesIcon } from "lucide-react";
+import { KanbanIcon, type LucideIcon, PencilRulerIcon, ShapesIcon } from "lucide-react";
 
 export type FeatureStatus = "available" | "soon";
 
@@ -21,12 +21,12 @@ export const features: Feature[] = [
     status: "available",
   },
   {
-    id: "feature-two",
-    label: "Feature two",
-    description: "Something new is on the way.",
-    href: "/",
-    icon: LayoutGridIcon,
-    status: "soon",
+    id: "kanban",
+    label: "Kanban",
+    description: "Plan work on a board with drag-and-drop lists.",
+    href: "/kanban",
+    icon: KanbanIcon,
+    status: "available",
   },
   {
     id: "feature-three",
