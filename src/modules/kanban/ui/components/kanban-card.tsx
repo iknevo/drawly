@@ -29,14 +29,14 @@ export function KanbanCardShell({
   return (
     <div
       className={cn(
-        "bg-card text-card-foreground ring-foreground/10 flex items-start gap-1 rounded-lg p-2 text-sm shadow-xs ring-1",
+        "bg-card text-card-foreground ring-foreground/10 flex items-center gap-1 rounded-lg p-2 text-sm shadow-xs ring-1",
         dragging && "opacity-50",
         className
       )}
     >
       <button
         type="button"
-        className="text-muted-foreground/60 hover:text-foreground focus-visible:ring-ring mt-0.5 -ml-0.5 shrink-0 touch-none rounded p-0.5 focus-visible:ring-2 focus-visible:outline-none active:cursor-grabbing"
+        className="text-muted-foreground/60 hover:text-foreground focus-visible:ring-ring -ml-0.5 shrink-0 touch-none rounded p-0.5 focus-visible:ring-2 focus-visible:outline-none active:cursor-grabbing"
         aria-label={`Drag "${card.title}"`}
         {...dragHandleProps}
       >
@@ -57,7 +57,7 @@ export function KanbanCardShell({
       {card.dueDate ? (
         <span
           className={cn(
-            "mt-0.5 inline-flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 text-xs ring-1",
+            "inline-flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 text-xs ring-1",
             getDueStyle(card.dueDate)
           )}
         >

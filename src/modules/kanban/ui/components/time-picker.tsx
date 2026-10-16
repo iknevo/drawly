@@ -54,7 +54,7 @@ export function TimePicker({ value, onValueChange, disabled }: TimePickerProps) 
         <SelectTrigger size="sm" aria-label="Hour" className="tabular-nums">
           <SelectValue placeholder="HH" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent alignItemWithTrigger={false}>
           {HOURS.map((item) => (
             <SelectItem key={item} value={item}>
               {item}
@@ -71,7 +71,7 @@ export function TimePicker({ value, onValueChange, disabled }: TimePickerProps) 
         <SelectTrigger size="sm" aria-label="Minute" className="tabular-nums">
           <SelectValue placeholder="MM" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent alignItemWithTrigger={false}>
           {MINUTES.map((item) => (
             <SelectItem key={item} value={item}>
               {item}
@@ -88,7 +88,7 @@ export function TimePicker({ value, onValueChange, disabled }: TimePickerProps) 
         <SelectTrigger size="sm" aria-label="AM or PM">
           <SelectValue placeholder="--" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent alignItemWithTrigger={false}>
           {MERIDIEMS.map((item) => (
             <SelectItem key={item} value={item}>
               {item}
