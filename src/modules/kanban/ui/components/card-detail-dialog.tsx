@@ -1,9 +1,11 @@
 "use client";
 
-import { Trash2Icon } from "lucide-react";
+import { formatDueDate, fromIso, toIso } from "../lib/due-date";
+import { CalendarDaysIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 
 import type { kanbanCard } from "@/modules/kanban/types/types";
@@ -22,7 +25,12 @@ type CardDetailDialogProps = {
   open: boolean;
   saving?: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (card: { id: string; title: string; description: string }) => Promise<unknown>;
+  onSave: (card: {
+    id: string;
+    title: string;
+    description: string;
+    dueDate: string | null;
+  }) => Promise<unknown>;
   onDelete: (cardId: string) => void;
 };
 
@@ -36,14 +44,19 @@ export function CardDetailDialog({
 }: CardDetailDialogProps) {
   const [title, setTitle] = useState(card?.title ?? "");
   const [description, setDescription] = useState(card?.description ?? "");
+  const [dueDate, setDueDate] = useState<string | null>(card?.dueDate ?? null);
 
-  const dirty = Boolean(card) && (title !== card?.title || description !== card?.description);
+  const dirty =
+    Boolean(card) &&
+    (title !== card?.title ||
+      description !== card?.description ||
+      dueDate !== (card?.dueDate ?? null));
 
   async function save() {
     if (!card || !title.trim()) return;
 
     try {
-      await onSave({ id: card.id, title: title.trim(), description });
+      await onSave({ id: card.id, title: title.trim(), description, dueDate });
       onOpenChange(false);
     } catch {
       // The mutation's onError already rolls back and shows a toast.
@@ -98,6 +111,39 @@ export function CardDetailDialog({
               placeholder="Add more detail (optional)"
               onChange={(event) => setDescription(event.target.value)}
             />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-sm leading-none font-medium">Due date</span>
+            <div className="flex items-center gap-2">
+              <Popover>
+                <PopoverTrigger
+                  render={
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="justify-start font-normal"
+                    />
+                  }
+                >
+                  <CalendarDaysIcon className="size-4" />
+                  {dueDate ? formatDueDate(dueDate) : "No due date"}
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={dueDate ? fromIso(dueDate) : undefined}
+                    onSelect={(date) => setDueDate(date ? toIso(date) : null)}
+                    autoFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              {dueDate ? (
+                <Button type="button" variant="ghost" size="sm" onClick={() => setDueDate(null)}>
+                  Clear
+                </Button>
+              ) : null}
+            </div>
           </div>
         </div>
         <DialogFooter className="gap-2 sm:justify-between">

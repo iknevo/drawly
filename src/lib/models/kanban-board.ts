@@ -11,6 +11,7 @@ const kanbanCardSchema = new mongoose.Schema(
     },
     title: { type: String, default: "New card" },
     description: { type: String, default: "" },
+    dueDate: { type: String, default: null },
   },
   { _id: false, versionKey: false }
 );

@@ -20,7 +20,7 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-type CardShape = { id: string; title: string; description: string };
+type CardShape = { id: string; title: string; description: string; dueDate: string | null };
 type ColumnShape = { id: string; title: string; cards: CardShape[] };
 
 type BoardLike = {
@@ -42,6 +42,7 @@ function toDto(board: BoardLike) {
         id: card.id,
         title: card.title,
         description: card.description,
+        dueDate: card.dueDate ?? null,
       })),
     })),
   };
@@ -134,6 +135,7 @@ export const kanbanRouter = createTRPCRouter({
         cards: column.cards.map((card) => ({
           title: card.title,
           description: card.description,
+          dueDate: card.dueDate ?? null,
         })),
       })),
     });
@@ -181,10 +183,12 @@ export const kanbanRouter = createTRPCRouter({
     }
 
     const id = new mongoose.Types.ObjectId().toString();
-    column.cards.push({ id, title: input.title ?? "New card", description: "" });
+    column.cards.push({ id, title: input.title ?? "New card", description: "", dueDate: null });
     await board.save();
 
-    return { card: { id, title: input.title ?? "New card", description: "" } };
+    return {
+      card: { id, title: input.title ?? "New card", description: "", dueDate: null },
+    };
   }),
 
   updateCard: protectedProcedure.input(updateCardSchema).mutation(async ({ ctx, input }) => {
@@ -194,7 +198,7 @@ export const kanbanRouter = createTRPCRouter({
       throw new TRPCError({ code: "NOT_FOUND", message: "Board not found" });
     }
 
-    let card: { id: string; title: string; description: string } | undefined;
+    let card: (typeof board.columns)[number]["cards"][number] | undefined;
 
     for (const column of board.columns) {
       const found = column.cards.find((item) => item.id === input.cardId);
@@ -210,10 +214,18 @@ export const kanbanRouter = createTRPCRouter({
 
     if (input.title !== undefined) card.title = input.title;
     if (input.description !== undefined) card.description = input.description;
+    if (input.dueDate !== undefined) card.dueDate = input.dueDate;
 
     await board.save();
 
-    return { card: { id: card.id, title: card.title, description: card.description } };
+    return {
+      card: {
+        id: card.id,
+        title: card.title,
+        description: card.description,
+        dueDate: card.dueDate ?? null,
+      },
+    };
   }),
 
   deleteCard: protectedProcedure.input(deleteCardSchema).mutation(async ({ ctx, input }) => {
@@ -254,7 +266,12 @@ export const kanbanRouter = createTRPCRouter({
 
     for (const column of board.columns) {
       for (const card of column.cards) {
-        byId.set(card.id, { id: card.id, title: card.title, description: card.description });
+        byId.set(card.id, {
+          id: card.id,
+          title: card.title,
+          description: card.description,
+          dueDate: card.dueDate ?? null,
+        });
       }
     }
 
@@ -266,7 +283,12 @@ export const kanbanRouter = createTRPCRouter({
 
       if (!incoming) {
         for (const card of column.cards) {
-          cards.push({ id: card.id, title: card.title, description: card.description });
+          cards.push({
+            id: card.id,
+            title: card.title,
+            description: card.description,
+            dueDate: card.dueDate ?? null,
+          });
           placed.add(card.id);
         }
       } else {
@@ -289,6 +311,7 @@ export const kanbanRouter = createTRPCRouter({
             id: card.id,
             title: card.title,
             description: card.description,
+            dueDate: card.dueDate ?? null,
           });
           placed.add(card.id);
         }

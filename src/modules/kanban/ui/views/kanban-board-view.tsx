@@ -124,7 +124,12 @@ export function KanbanBoardView({ boardId }: { boardId: string }) {
                         ...column,
                         cards: [
                           ...column.cards,
-                          { id: tempId, title: variables.title ?? "New card", description: "" },
+                          {
+                            id: tempId,
+                            title: variables.title ?? "New card",
+                            description: "",
+                            dueDate: null,
+                          },
                         ],
                       }
                     : column
@@ -175,6 +180,9 @@ export function KanbanBoardView({ boardId }: { boardId: string }) {
                           ...(variables.title !== undefined ? { title: variables.title } : {}),
                           ...(variables.description !== undefined
                             ? { description: variables.description }
+                            : {}),
+                          ...(variables.dueDate !== undefined
+                            ? { dueDate: variables.dueDate }
                             : {}),
                         }
                       : item
@@ -470,6 +478,7 @@ export function KanbanBoardView({ boardId }: { boardId: string }) {
             cardId: card.id,
             title: card.title,
             description: card.description,
+            dueDate: card.dueDate,
           })
         }
         onDelete={(cardId) => deleteCard.mutate({ id: boardId, cardId })}

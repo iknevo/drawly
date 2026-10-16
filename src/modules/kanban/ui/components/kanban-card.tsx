@@ -1,9 +1,10 @@
 "use client";
 
+import { formatDueDate, getDueStyle } from "../lib/due-date";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "cn";
-import { GripVerticalIcon } from "lucide-react";
+import { CalendarDaysIcon, GripVerticalIcon } from "lucide-react";
 
 import type { kanbanCard } from "@/modules/kanban/types/types";
 
@@ -47,6 +48,17 @@ export function KanbanCardShell({
         onClick={() => onOpen?.(card)}
       >
         <p className="font-medium wrap-break-word">{card.title}</p>
+        {card.dueDate ? (
+          <span
+            className={cn(
+              "mt-1 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs ring-1",
+              getDueStyle(card.dueDate)
+            )}
+          >
+            <CalendarDaysIcon className="size-3" />
+            {formatDueDate(card.dueDate)}
+          </span>
+        ) : null}
         {card.description ? (
           <p className="text-muted-foreground mt-0.5 line-clamp-2 text-xs wrap-break-word">
             {card.description}
