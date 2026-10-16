@@ -1,4 +1,4 @@
-import { KanbanIcon, type LucideIcon, PencilRulerIcon, ShapesIcon } from "lucide-react";
+import { FileTextIcon, KanbanIcon, type LucideIcon, PencilRulerIcon } from "lucide-react";
 
 export type FeatureStatus = "available" | "soon";
 
@@ -29,11 +29,11 @@ export const features: Feature[] = [
     status: "available",
   },
   {
-    id: "feature-three",
-    label: "Feature three",
-    description: "Something new is on the way.",
-    href: "/",
-    icon: ShapesIcon,
-    status: "soon",
+    id: "docs",
+    label: "Docs",
+    description: "Write notes, drafts, and everything in between.",
+    href: "/docs",
+    icon: FileTextIcon,
+    status: "available",
   },
 ];
