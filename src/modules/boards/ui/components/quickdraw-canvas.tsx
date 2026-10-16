@@ -115,6 +115,8 @@ export function QuickdrawCanvas({
   const thumbnailTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sendingThumbnailRef = useRef(false);
   const seededRef = useRef(false);
+  const pendingConflictRef = useRef(false);
+  const syncingRef = useRef(false);
 
   const reportStatus = useCallback((status: SaveStatus) => {
     statusRef.current = status;
@@ -132,6 +134,8 @@ export function QuickdrawCanvas({
   });
 
   const flushRef = useRef<() => Promise<void>>(async () => {});
+  const syncIdleRef = useRef<() => Promise<void>>(async () => {});
+  const resolveConflictRef = useRef<() => Promise<void>>(async () => {});
 
   const captureThumbnail = useCallback(async (): Promise<string | null | undefined> => {
     const editor = qdRef.current?.editor;
@@ -216,6 +220,7 @@ export function QuickdrawCanvas({
         ...trpc.boards.get.queryOptions({ id: boardId }),
         staleTime: 0,
       });
+      if (dirtyRef.current) return false;
       revRef.current = fresh.rev;
       store.loadSnapshot(fresh.snapshot as Parameters<Store["loadSnapshot"]>[0], "remote");
       dirtyRef.current = false;
@@ -227,6 +232,52 @@ export function QuickdrawCanvas({
       return false;
     }
   }, [boardId, queryClient, reportStatus, store, trpc]);
+
+  const syncIfIdle = useCallback(async () => {
+    if (dirtyRef.current || flushingRef.current || pendingConflictRef.current || syncingRef.current)
+      return;
+    syncingRef.current = true;
+    try {
+      const fresh = await queryClient.query({
+        ...trpc.boards.get.queryOptions({ id: boardId }),
+        staleTime: 0,
+      });
+      if (dirtyRef.current || flushingRef.current || pendingConflictRef.current) return;
+      if (fresh.rev === revRef.current) return;
+      revRef.current = fresh.rev;
+      store.loadSnapshot(fresh.snapshot as Parameters<Store["loadSnapshot"]>[0], "remote");
+      reportStatus("saved");
+    } catch {
+      // stay on the local copy: we are clean, so nothing is lost; retried on next focus
+    } finally {
+      syncingRef.current = false;
+    }
+  }, [boardId, queryClient, reportStatus, store, trpc]);
+
+  const resolvePendingConflict = useCallback(async () => {
+    if (!pendingConflictRef.current) return;
+    if (flushingRef.current) return;
+    pendingConflictRef.current = false;
+    dirtyRef.current = false;
+    const reloaded = await reloadRemote();
+    if (reloaded) {
+      if (!unmountedRef.current) {
+        toast.add({
+          type: "info",
+          description: "This board changed elsewhere. Reloaded the latest version.",
+        });
+      }
+      return;
+    }
+    dirtyRef.current = true;
+    reportStatus("error");
+    if (!unmountedRef.current) {
+      toast.add({
+        type: "error",
+        description: "Couldn't load the latest version. Your changes are still here.",
+      });
+    }
+  }, [reloadRemote, reportStatus]);
 
   const flush = useCallback(async () => {
     if (timerRef.current) {
@@ -265,6 +316,13 @@ export function QuickdrawCanvas({
       const code = (error as { data?: { code?: string } } | null)?.data?.code;
 
       if (code === "CONFLICT") {
+        if (document.visibilityState === "hidden") {
+          pendingConflictRef.current = true;
+          dirtyRef.current = true;
+          reportStatus("error");
+          return;
+        }
+        pendingConflictRef.current = false;
         const reloaded = await reloadRemote();
         if (!reloaded) {
           dirtyRef.current = true;
@@ -302,6 +360,14 @@ export function QuickdrawCanvas({
   useEffect(() => {
     flushRef.current = flush;
   }, [flush]);
+
+  useEffect(() => {
+    syncIdleRef.current = syncIfIdle;
+  }, [syncIfIdle]);
+
+  useEffect(() => {
+    resolveConflictRef.current = resolvePendingConflict;
+  }, [resolvePendingConflict]);
 
   useImperativeHandle(ref, () => ({ flush }), [flush]);
 
@@ -360,9 +426,16 @@ export function QuickdrawCanvas({
   useEffect(() => {
     unmountedRef.current = false;
     const onVisibility = () => {
-      if (document.visibilityState !== "hidden") return;
-      void flushRef.current();
-      void sendThumbnailRef.current();
+      if (document.visibilityState === "hidden") {
+        void flushRef.current();
+        void sendThumbnailRef.current();
+        return;
+      }
+      if (pendingConflictRef.current) {
+        void resolveConflictRef.current();
+        return;
+      }
+      void syncIdleRef.current();
     };
     window.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("pagehide", onVisibility);
