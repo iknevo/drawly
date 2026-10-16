@@ -13,7 +13,7 @@ const cardTitleSchema = z.string().trim().min(1, "Title is required").max(140, "
 const cardDescriptionSchema = z.string().max(5000, "Description is too long");
 export const dueDateSchema = z
   .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid due date")
+  .regex(/^\d{4}-\d{2}-\d{2}(T([01]\d|2[0-3]):[0-5]\d)?$/, "Invalid due date")
   .nullable();
 
 export const listKanbanSchema = z.object({

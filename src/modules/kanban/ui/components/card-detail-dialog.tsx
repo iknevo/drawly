@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDueDate, fromIso, toIso } from "../lib/due-date";
+import { formatDueDate, fromIso, splitIso, toIso } from "../lib/due-date";
 import { CalendarDaysIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 
@@ -45,6 +45,9 @@ export function CardDetailDialog({
   const [title, setTitle] = useState(card?.title ?? "");
   const [description, setDescription] = useState(card?.description ?? "");
   const [dueDate, setDueDate] = useState<string | null>(card?.dueDate ?? null);
+  const { date: dueDatePart, time: dueTimePart } = dueDate
+    ? splitIso(dueDate)
+    : { date: null, time: null };
 
   const dirty =
     Boolean(card) &&
@@ -113,37 +116,55 @@ export function CardDetailDialog({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <span className="text-sm leading-none font-medium">Due date</span>
-            <div className="flex items-center gap-2">
-              <Popover>
-                <PopoverTrigger
-                  render={
+            <span className="text-sm leading-none font-medium">Due date &amp; time</span>
+            <Popover>
+              <PopoverTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-fit justify-start font-normal"
+                  />
+                }
+              >
+                <CalendarDaysIcon className="size-4" />
+                {dueDate ? formatDueDate(dueDate) : "No due date"}
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={dueDate ? fromIso(dueDate) : undefined}
+                  onSelect={(date) => setDueDate(date ? toIso(date, dueTimePart) : null)}
+                  autoFocus
+                />
+                <div className="flex items-center justify-between gap-2 border-t p-2">
+                  <Input
+                    type="time"
+                    value={dueTimePart ?? ""}
+                    disabled={!dueDatePart}
+                    aria-label="Due time"
+                    className="h-8 w-auto"
+                    onChange={(event) => {
+                      if (!dueDatePart) return;
+                      setDueDate(
+                        event.target.value ? `${dueDatePart}T${event.target.value}` : dueDatePart
+                      );
+                    }}
+                  />
+                  {dueDate ? (
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
-                      className="justify-start font-normal"
-                    />
-                  }
-                >
-                  <CalendarDaysIcon className="size-4" />
-                  {dueDate ? formatDueDate(dueDate) : "No due date"}
-                </PopoverTrigger>
-                <PopoverContent align="start" className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={dueDate ? fromIso(dueDate) : undefined}
-                    onSelect={(date) => setDueDate(date ? toIso(date) : null)}
-                    autoFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              {dueDate ? (
-                <Button type="button" variant="ghost" size="sm" onClick={() => setDueDate(null)}>
-                  Clear
-                </Button>
-              ) : null}
-            </div>
+                      onClick={() => setDueDate(null)}
+                    >
+                      Clear
+                    </Button>
+                  ) : null}
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
         <DialogFooter className="gap-2 sm:justify-between">

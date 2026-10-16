@@ -48,23 +48,23 @@ export function KanbanCardShell({
         onClick={() => onOpen?.(card)}
       >
         <p className="font-medium wrap-break-word">{card.title}</p>
-        {card.dueDate ? (
-          <span
-            className={cn(
-              "mt-1 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs ring-1",
-              getDueStyle(card.dueDate)
-            )}
-          >
-            <CalendarDaysIcon className="size-3" />
-            {formatDueDate(card.dueDate)}
-          </span>
-        ) : null}
         {card.description ? (
           <p className="text-muted-foreground mt-0.5 line-clamp-2 text-xs wrap-break-word">
             {card.description}
           </p>
         ) : null}
       </button>
+      {card.dueDate ? (
+        <span
+          className={cn(
+            "mt-0.5 inline-flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 text-xs ring-1",
+            getDueStyle(card.dueDate)
+          )}
+        >
+          <CalendarDaysIcon className="size-3" />
+          {formatDueDate(card.dueDate)}
+        </span>
+      ) : null}
     </div>
   );
 }
