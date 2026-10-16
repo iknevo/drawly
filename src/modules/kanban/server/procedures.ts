@@ -64,11 +64,15 @@ export const kanbanRouter = createTRPCRouter({
           ? { createdAt: -1 }
           : { updatedAt: -1 };
 
-    const boards = await KanbanBoard.find(filter)
-      .sort(sortSpec)
-      .limit(200)
-      .select("title columns updatedAt")
-      .lean();
+    const [boards, total] = await Promise.all([
+      KanbanBoard.find(filter)
+        .sort(sortSpec)
+        .skip((input.page - 1) * input.pageSize)
+        .limit(input.pageSize)
+        .select("title columns updatedAt")
+        .lean(),
+      KanbanBoard.countDocuments(filter),
+    ]);
 
     return {
       items: boards.map((board) => ({
@@ -82,7 +86,9 @@ export const kanbanRouter = createTRPCRouter({
         })),
         updatedAt: board.updatedAt,
       })),
-      total: boards.length,
+      total,
+      page: input.page,
+      pageSize: input.pageSize,
     };
   }),
 
