@@ -7,6 +7,7 @@ import {
   crossColumnMove,
   finalizeDrop,
   findCardById,
+  findCardLocation,
   sameArrangement,
   toIdColumns,
 } from "../lib/dnd";
@@ -25,11 +26,12 @@ import {
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "cn";
-import { ArrowLeftIcon, MoreHorizontalIcon, Trash2Icon } from "lucide-react";
+import { ArrowLeftIcon, MoreHorizontalIcon, SearchIcon, Trash2Icon, XIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
+import { HeaderActions } from "@/components/header-actions";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -68,7 +70,9 @@ export function KanbanBoardView({ boardId }: { boardId: string }) {
   const [draftTitle, setDraftTitle] = useState("");
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeWidth, setActiveWidth] = useState<number | null>(null);
   const [openCardId, setOpenCardId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
   const dragSnapshot = useRef<kanbanColumn[] | null>(null);
 
   const sensors = useSensors(
@@ -77,6 +81,9 @@ export function KanbanBoardView({ boardId }: { boardId: string }) {
   );
 
   const readColumns = (): kanbanColumn[] => queryClient.getQueryData(boardKey)?.columns ?? [];
+
+  const query = search.trim().toLowerCase();
+  const searching = query.length > 0;
 
   const renameBoard = useMutation(
     trpc.kanban.rename.mutationOptions({
@@ -114,26 +121,27 @@ export function KanbanBoardView({ boardId }: { boardId: string }) {
         await queryClient.cancelQueries({ queryKey: boardKey });
         const previous = queryClient.getQueryData(boardKey);
         const tempId = `temp-${crypto.randomUUID()}`;
+        const tempCard: kanbanCard = {
+          id: tempId,
+          title: variables.title ?? "New card",
+          description: variables.description ?? "",
+          dueDate: variables.dueDate ?? null,
+        };
         queryClient.setQueryData(boardKey, (current) =>
           current
             ? {
                 ...current,
-                columns: current.columns.map((column) =>
-                  column.id === variables.columnId
-                    ? {
-                        ...column,
-                        cards: [
-                          ...column.cards,
-                          {
-                            id: tempId,
-                            title: variables.title ?? "New card",
-                            description: "",
-                            dueDate: null,
-                          },
-                        ],
-                      }
-                    : column
-                ),
+                columns: current.columns.map((column) => {
+                  if (column.id !== variables.columnId) return column;
+
+                  const index = variables.index;
+                  const cards =
+                    index !== undefined && index >= 0 && index <= column.cards.length
+                      ? [...column.cards.slice(0, index), tempCard, ...column.cards.slice(index)]
+                      : [...column.cards, tempCard];
+
+                  return { ...column, cards };
+                }),
               }
             : current
         );
@@ -154,6 +162,7 @@ export function KanbanBoardView({ boardId }: { boardId: string }) {
       },
       onError: (error, _variables, context) => {
         if (context?.previous) queryClient.setQueryData(boardKey, context.previous);
+        setOpenCardId((current) => (current === context?.tempId ? null : current));
         toast.add({ type: "error", description: error.message });
       },
       onSettled: async () => {
@@ -197,6 +206,9 @@ export function KanbanBoardView({ boardId }: { boardId: string }) {
         if (context?.previous) queryClient.setQueryData(boardKey, context.previous);
         toast.add({ type: "error", description: error.message });
       },
+      onSettled: async () => {
+        await queryClient.invalidateQueries(trpc.kanban.list.queryFilter());
+      },
     })
   );
 
@@ -205,6 +217,7 @@ export function KanbanBoardView({ boardId }: { boardId: string }) {
       onMutate: async (variables) => {
         await queryClient.cancelQueries({ queryKey: boardKey });
         const previous = queryClient.getQueryData(boardKey);
+        const location = findCardLocation(readColumns(), variables.cardId);
         queryClient.setQueryData(boardKey, (current) =>
           current
             ? {
@@ -216,7 +229,31 @@ export function KanbanBoardView({ boardId }: { boardId: string }) {
               }
             : current
         );
-        return { previous };
+        return { previous, location };
+      },
+      onSuccess: (_data, _variables, context) => {
+        const location = context?.location;
+        if (!location) return;
+
+        let toastId = "";
+        toastId = toast.add({
+          type: "success",
+          description: "Card deleted",
+          actionProps: {
+            children: "Undo",
+            onClick: () => {
+              toast.close(toastId);
+              createCard.mutate({
+                id: boardId,
+                columnId: location.columnId,
+                title: location.card.title,
+                description: location.card.description,
+                dueDate: location.card.dueDate,
+                index: location.index,
+              });
+            },
+          },
+        });
       },
       onError: (error, _variables, context) => {
         if (context?.previous) queryClient.setQueryData(boardKey, context.previous);
@@ -279,11 +316,16 @@ export function KanbanBoardView({ boardId }: { boardId: string }) {
   }
 
   function handleDragStart(event: DragStartEvent) {
+    if (searching) return;
+    const id = String(event.active.id);
+    const node = document.querySelector<HTMLElement>(`[data-card-id="${id}"]`);
+    setActiveWidth(node ? node.getBoundingClientRect().width : null);
     dragSnapshot.current = readColumns();
-    setActiveId(String(event.active.id));
+    setActiveId(id);
   }
 
   function handleDragOver(event: DragOverEvent) {
+    if (searching) return;
     const { active, over } = event;
     if (!over) return;
     const activeCardId = String(active.id);
@@ -298,8 +340,16 @@ export function KanbanBoardView({ boardId }: { boardId: string }) {
   }
 
   function handleDragEnd(event: DragEndEvent) {
+    if (searching) {
+      setActiveId(null);
+      setActiveWidth(null);
+      dragSnapshot.current = null;
+      return;
+    }
+
     const { active, over } = event;
     setActiveId(null);
+    setActiveWidth(null);
 
     const snapshot = dragSnapshot.current;
     dragSnapshot.current = null;
@@ -330,6 +380,7 @@ export function KanbanBoardView({ boardId }: { boardId: string }) {
   function handleDragCancel() {
     const snapshot = dragSnapshot.current;
     setActiveId(null);
+    setActiveWidth(null);
     restoreSnapshot(snapshot);
   }
 
@@ -370,9 +421,22 @@ export function KanbanBoardView({ boardId }: { boardId: string }) {
   const activeCard = activeId ? findCardById(columns, activeId) : null;
   const openCard = openCardId ? findCardById(columns, openCardId) : null;
 
+  const displayColumns = searching
+    ? columns.map((column) => ({
+        ...column,
+        cards: column.cards.filter(
+          (card) =>
+            card.title.toLowerCase().includes(query) ||
+            card.description.toLowerCase().includes(query)
+        ),
+      }))
+    : columns;
+  const visibleCards = displayColumns.reduce((total, column) => total + column.cards.length, 0);
+  const totalCards = columns.reduce((total, column) => total + column.cards.length, 0);
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <header className="flex items-center gap-3 border-b px-3 py-2">
+      <HeaderActions slot="title">
         <Link
           href="/kanban"
           className={buttonVariants({ variant: "ghost", size: "icon-sm" })}
@@ -415,23 +479,51 @@ export function KanbanBoardView({ boardId }: { boardId: string }) {
             {data.title}
           </button>
         )}
+      </HeaderActions>
 
-        <div className="ml-auto flex items-center gap-3">
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={<Button variant="ghost" size="icon-sm" aria-label="Board actions" />}
+      <HeaderActions slot="actions">
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={<Button variant="ghost" size="icon-sm" aria-label="Board actions" />}
+          >
+            <MoreHorizontalIcon />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem variant="destructive" onClick={() => setDeleteOpen(true)}>
+              <Trash2Icon />
+              Delete board
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </HeaderActions>
+
+      <div className="flex items-center gap-3 border-b px-3 py-2">
+        <div className="relative w-full max-w-xs">
+          <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
+          <Input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search cards…"
+            aria-label="Search cards"
+            className="pl-8"
+          />
+          {search.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              aria-label="Clear search"
+              className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2 -translate-y-1/2"
             >
-              <MoreHorizontalIcon />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem variant="destructive" onClick={() => setDeleteOpen(true)}>
-                <Trash2Icon />
-                Delete board
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              <XIcon className="size-4" />
+            </button>
+          ) : null}
         </div>
-      </header>
+        {searching ? (
+          <span className="text-muted-foreground text-xs">
+            {visibleCards} of {totalCards} {totalCards === 1 ? "card" : "cards"}
+          </span>
+        ) : null}
+      </div>
 
       <DndContext
         sensors={sensors}
@@ -445,11 +537,13 @@ export function KanbanBoardView({ boardId }: { boardId: string }) {
           className={cn("flex min-h-0 flex-1 overflow-x-auto p-4", activeId && "cursor-grabbing")}
         >
           <div className="mx-auto flex w-full max-w-6xl items-stretch gap-4">
-            {columns.map((column) => (
+            {displayColumns.map((column) => (
               <KanbanColumn
                 key={column.id}
                 column={column}
                 creating={createCard.isPending}
+                disabled={searching}
+                searching={searching}
                 onOpenCard={(card) => setOpenCardId(card.id)}
                 onCreateCard={(columnId, title) =>
                   createCard.mutate({ id: boardId, columnId, title })
@@ -460,7 +554,11 @@ export function KanbanBoardView({ boardId }: { boardId: string }) {
         </div>
 
         <DragOverlay>
-          {activeCard ? <KanbanCardShell card={activeCard} className="shadow-lg" /> : null}
+          {activeCard ? (
+            <div style={{ width: activeWidth ?? undefined }}>
+              <KanbanCardShell card={activeCard} className="shadow-lg" />
+            </div>
+          ) : null}
         </DragOverlay>
       </DndContext>
 

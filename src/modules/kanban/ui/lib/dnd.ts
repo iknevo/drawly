@@ -10,18 +10,23 @@ export function findCardById(columns: kanbanColumn[], cardId: string): kanbanCar
   return null;
 }
 
+export function findCardLocation(
+  columns: kanbanColumn[],
+  cardId: string
+): { columnId: string; index: number; card: kanbanCard } | null {
+  for (const column of columns) {
+    const index = column.cards.findIndex((item) => item.id === cardId);
+    if (index !== -1) {
+      return { columnId: column.id, index, card: column.cards[index] };
+    }
+  }
+  return null;
+}
+
 export function toIdColumns(columns: kanbanColumn[]) {
   return columns.map((column) => ({
     columnId: column.id,
     cardIds: column.cards.map((card) => card.id),
-  }));
-}
-
-export function columnsToDto(columns: kanbanColumn[]): kanbanColumn[] {
-  return columns.map((column) => ({
-    id: column.id,
-    title: column.title,
-    cards: column.cards.map((card) => ({ ...card })),
   }));
 }
 

@@ -183,12 +183,22 @@ export const kanbanRouter = createTRPCRouter({
     }
 
     const id = new mongoose.Types.ObjectId().toString();
-    column.cards.push({ id, title: input.title ?? "New card", description: "", dueDate: null });
+    const card = {
+      id,
+      title: input.title ?? "New card",
+      description: input.description ?? "",
+      dueDate: input.dueDate ?? null,
+    };
+
+    if (input.index !== undefined && input.index >= 0 && input.index < column.cards.length) {
+      column.cards.splice(input.index, 0, card);
+    } else {
+      column.cards.push(card);
+    }
+
     await board.save();
 
-    return {
-      card: { id, title: input.title ?? "New card", description: "", dueDate: null },
-    };
+    return { card };
   }),
 
   updateCard: protectedProcedure.input(updateCardSchema).mutation(async ({ ctx, input }) => {

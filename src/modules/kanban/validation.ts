@@ -34,6 +34,9 @@ export const renameKanbanBoardSchema = kanbanBoardIdSchema.extend({
 export const createCardSchema = kanbanBoardIdSchema.extend({
   columnId: columnIdSchema,
   title: cardTitleSchema.optional(),
+  description: cardDescriptionSchema.optional(),
+  dueDate: dueDateSchema.optional(),
+  index: z.number().int().min(0).max(10_000).optional(),
 });
 
 export const updateCardSchema = kanbanBoardIdSchema.extend({

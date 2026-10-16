@@ -82,6 +82,11 @@ function BoardThumbnail({ columns }: { columns: kanbanListItem["columns"] }) {
                   className="bg-muted-foreground/15 block h-1.5 w-full rounded-full"
                 />
               ))}
+              {column.cardCount > 3 ? (
+                <span className="text-muted-foreground/70 text-[10px] leading-none tabular-nums">
+                  +{column.cardCount - 3}
+                </span>
+              ) : null}
             </div>
           </div>
         );

@@ -74,7 +74,7 @@ export function CardDetailDialog({
         <DialogHeader>
           <DialogTitle>Edit card</DialogTitle>
           <DialogDescription>
-            Update the card title and description. Changes save automatically.
+            Update the card title, description, and due date, then save.
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4">

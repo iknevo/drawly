@@ -15,12 +15,21 @@ import type { kanbanCard, kanbanColumn } from "@/modules/kanban/types/types";
 type KanbanColumnProps = {
   column: kanbanColumn;
   creating?: boolean;
+  disabled?: boolean;
+  searching?: boolean;
   onOpenCard: (card: kanbanCard) => void;
   onCreateCard: (columnId: string, title: string) => void;
 };
 
-export function KanbanColumn({ column, creating, onOpenCard, onCreateCard }: KanbanColumnProps) {
-  const { setNodeRef, isOver } = useDroppable({ id: column.id });
+export function KanbanColumn({
+  column,
+  creating,
+  disabled,
+  searching,
+  onOpenCard,
+  onCreateCard,
+}: KanbanColumnProps) {
+  const { setNodeRef, isOver } = useDroppable({ id: column.id, disabled });
   const [composing, setComposing] = useState(false);
   const [title, setTitle] = useState("");
   const status = getColumnStatusStyle(column.id);
@@ -61,11 +70,11 @@ export function KanbanColumn({ column, creating, onOpenCard, onCreateCard }: Kan
           )}
         >
           {column.cards.map((card) => (
-            <KanbanCard key={card.id} card={card} onOpen={onOpenCard} />
+            <KanbanCard key={card.id} card={card} onOpen={onOpenCard} disabled={disabled} />
           ))}
           {column.cards.length === 0 && !composing ? (
             <p className="text-muted-foreground/70 px-2 py-6 text-center text-xs">
-              Drop cards here
+              {searching ? "No matches" : "Drop cards here"}
             </p>
           ) : null}
         </div>
