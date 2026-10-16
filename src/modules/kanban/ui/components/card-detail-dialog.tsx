@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 
+import { TimePicker } from "./time-picker";
 import type { kanbanCard } from "@/modules/kanban/types/types";
 
 type CardDetailDialogProps = {
@@ -139,17 +140,12 @@ export function CardDetailDialog({
                   autoFocus
                 />
                 <div className="flex items-center justify-between gap-2 border-t p-2">
-                  <Input
-                    type="time"
-                    value={dueTimePart ?? ""}
+                  <TimePicker
+                    value={dueTimePart}
                     disabled={!dueDatePart}
-                    aria-label="Due time"
-                    className="h-8 w-auto"
-                    onChange={(event) => {
+                    onValueChange={(time) => {
                       if (!dueDatePart) return;
-                      setDueDate(
-                        event.target.value ? `${dueDatePart}T${event.target.value}` : dueDatePart
-                      );
+                      setDueDate(`${dueDatePart}T${time}`);
                     }}
                   />
                   {dueDate ? (
