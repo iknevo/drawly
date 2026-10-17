@@ -2,22 +2,32 @@
 
 import { createDocVimExtension, forceInsertMode } from "../lib/vim-mode";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { TaskItem } from "@tiptap/extension-task-item";
-import { TaskList } from "@tiptap/extension-task-list";
+import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
+import { Image } from "@tiptap/extension-image";
+import { TaskItem, TaskList } from "@tiptap/extension-list";
+import { TableKit } from "@tiptap/extension-table";
 import { Placeholder } from "@tiptap/extensions";
+import { Markdown } from "@tiptap/markdown";
 import { type Content, EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useCallback, useEffect, useImperativeHandle, useMemo, useRef } from "react";
+import { common, createLowlight } from "lowlight";
+import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import type { Mode } from "vim-prosemirror";
 import { getVimMode } from "vim-prosemirror/tiptap";
+
+import { cn } from "@/lib/utils";
 
 import { toast } from "@/components/ui/toast";
 
 import { EditorToolbar } from "./editor-toolbar";
+import { MarkdownSourceEditor } from "./markdown-source-editor-lazy";
 import { useTRPC } from "@/trpc/client";
 
 const SAVE_DELAY = 800;
+const PREVIEW_DELAY = 200;
 const MAX_RETRY_DELAY = 30_000;
+
+const lowlight = createLowlight(common);
 
 export type DocSaveStatus = "saved" | "dirty" | "saving" | "error" | "offline";
 
@@ -30,6 +40,8 @@ type DocEditorProps = {
   content: unknown;
   rev: number;
   vimEnabled?: boolean;
+  markdownMode?: boolean;
+  previewEnabled?: boolean;
   onStatus?: (status: DocSaveStatus) => void;
   onMode?: (mode: Mode) => void;
   ref?: React.Ref<DocEditorHandle>;
@@ -40,6 +52,8 @@ export function DocEditor({
   content,
   rev,
   vimEnabled = false,
+  markdownMode = false,
+  previewEnabled = false,
   onStatus,
   onMode,
   ref,
@@ -76,6 +90,17 @@ export function DocEditor({
   const dirtyRef = useRef(false);
   const unmountedRef = useRef(false);
 
+  const markdownRef = useRef("");
+  const markdownDirtyRef = useRef(false);
+  const [sourceEpoch, setSourceEpoch] = useState(0);
+
+  const richScrollRef = useRef<HTMLDivElement>(null);
+  const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const previewEnabledRef = useRef(previewEnabled);
+  useEffect(() => {
+    previewEnabledRef.current = previewEnabled;
+  });
+
   const reportStatus = useCallback((status: DocSaveStatus) => {
     statusRef.current = status;
     onStatusRef.current?.(status);
@@ -88,6 +113,7 @@ export function DocEditor({
 
   const flushRef = useRef<() => Promise<void>>(async () => {});
   const scheduleSaveRef = useRef<() => void>(() => {});
+  const syncMarkdownRef = useRef<() => void>(() => {});
 
   const scheduleSave = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -100,12 +126,33 @@ export function DocEditor({
     scheduleSaveRef.current = scheduleSave;
   }, [scheduleSave]);
 
+  const onMarkdownChange = useCallback(
+    (value: string) => {
+      markdownRef.current = value;
+      markdownDirtyRef.current = true;
+      dirtyRef.current = true;
+      reportStatus("dirty");
+      scheduleSaveRef.current();
+      if (previewEnabledRef.current) {
+        if (previewTimerRef.current) clearTimeout(previewTimerRef.current);
+        previewTimerRef.current = setTimeout(() => {
+          syncMarkdownRef.current();
+        }, PREVIEW_DELAY);
+      }
+    },
+    [reportStatus]
+  );
+
   const extensions = useMemo(
     () => [
-      StarterKit,
+      StarterKit.configure({ codeBlock: false }),
       Placeholder.configure({ placeholder: "Start writing…" }),
       TaskList,
       TaskItem.configure({ nested: true }),
+      TableKit,
+      Image,
+      CodeBlockLowlight.configure({ lowlight }),
+      Markdown.configure({ markedOptions: { gfm: true }, indentation: { size: 2 } }),
       createDocVimExtension(),
     ],
     []
@@ -127,6 +174,44 @@ export function DocEditor({
     if (vimEnabled) forceInsertMode(editor);
     editor.view.dispatch(editor.state.tr);
   }, [editor, vimEnabled]);
+
+  useEffect(() => {
+    if (!editor) return;
+    if (markdownMode) return;
+    if (!markdownDirtyRef.current) return;
+    editor.commands.setContent(markdownRef.current, { contentType: "markdown", emitUpdate: false });
+    markdownDirtyRef.current = false;
+  }, [editor, markdownMode]);
+
+  const syncMarkdown = useCallback(() => {
+    if (!editor) return;
+    const container = richScrollRef.current;
+    const scrollTop = container?.scrollTop ?? 0;
+    editor.commands.setContent(markdownRef.current, { contentType: "markdown", emitUpdate: false });
+    markdownDirtyRef.current = false;
+    if (container) {
+      requestAnimationFrame(() => {
+        container.scrollTop = scrollTop;
+      });
+    }
+  }, [editor]);
+
+  useEffect(() => {
+    syncMarkdownRef.current = syncMarkdown;
+  }, [syncMarkdown]);
+
+  useEffect(() => {
+    if (!editor) return;
+    editor.setEditable(!markdownMode, false);
+  }, [editor, markdownMode]);
+
+  useEffect(() => {
+    if (!editor) return;
+    if (!markdownMode || !previewEnabled) return;
+    if (!markdownDirtyRef.current) return;
+    if (previewTimerRef.current) clearTimeout(previewTimerRef.current);
+    syncMarkdownRef.current();
+  }, [editor, markdownMode, previewEnabled]);
 
   const lastModeRef = useRef<Mode | null>(null);
   useEffect(() => {
@@ -164,6 +249,8 @@ export function DocEditor({
       if (dirtyRef.current) return false;
       revRef.current = fresh.rev;
       editor.commands.setContent(fresh.content as Content, { emitUpdate: false });
+      markdownDirtyRef.current = false;
+      setSourceEpoch((epoch) => epoch + 1);
       dirtyRef.current = false;
       attemptRef.current = 0;
       reportStatus("saved");
@@ -185,6 +272,8 @@ export function DocEditor({
       if (fresh.rev === revRef.current) return;
       revRef.current = fresh.rev;
       editor.commands.setContent(fresh.content as Content, { emitUpdate: false });
+      markdownDirtyRef.current = false;
+      setSourceEpoch((epoch) => epoch + 1);
       reportStatus("saved");
     } catch {
       // stay on the local copy: we are clean, so nothing is lost
@@ -207,6 +296,14 @@ export function DocEditor({
     if (!onlineRef.current) {
       reportStatus("offline");
       return;
+    }
+
+    if (markdownDirtyRef.current) {
+      editor.commands.setContent(markdownRef.current, {
+        contentType: "markdown",
+        emitUpdate: false,
+      });
+      markdownDirtyRef.current = false;
     }
 
     dirtyRef.current = false;
@@ -327,18 +424,45 @@ export function DocEditor({
       unmountedRef.current = true;
       if (timerRef.current) clearTimeout(timerRef.current);
       if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+      if (previewTimerRef.current) clearTimeout(previewTimerRef.current);
       void flushRef.current();
     };
   }, []);
 
   return (
     <div className="doc-editor flex min-h-0 flex-1 flex-col">
-      <div className="bg-background/95 sticky top-0 z-10 border-b px-3 py-2 backdrop-blur">
-        <EditorToolbar editor={editor} />
-      </div>
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-3xl px-6 py-10">
-          <EditorContent editor={editor} />
+      {markdownMode ? null : (
+        <div className="bg-background/95 sticky top-0 z-10 border-b px-3 py-2 backdrop-blur">
+          <EditorToolbar editor={editor} />
+        </div>
+      )}
+      <div
+        className={cn(
+          "flex min-h-0 flex-1 flex-col",
+          markdownMode && previewEnabled && "md:flex-row"
+        )}
+      >
+        {markdownMode && editor ? (
+          <MarkdownSourceEditor
+            key={sourceEpoch}
+            initialValue={editor.getMarkdown()}
+            vimEnabled={vimEnabled}
+            onChange={onMarkdownChange}
+          />
+        ) : null}
+        <div
+          ref={richScrollRef}
+          className={cn(
+            "min-h-0 flex-1 overflow-y-auto",
+            markdownMode && !previewEnabled && "hidden",
+            markdownMode &&
+              previewEnabled &&
+              "doc-preview border-border border-t md:border-t-0 md:border-l"
+          )}
+        >
+          <div className="mx-auto w-full max-w-3xl px-6 py-10">
+            <EditorContent editor={editor} spellCheck={false} />
+          </div>
         </div>
       </div>
     </div>

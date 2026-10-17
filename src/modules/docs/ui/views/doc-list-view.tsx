@@ -17,7 +17,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import { getPageItems, getTotalPages } from "@/lib/pagination";
 
 import { ErrorState } from "@/components/error-state";
-import { HeaderActions } from "@/components/header-actions";
+import { SectionHeader } from "@/components/section-header";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -43,7 +43,7 @@ import { useTRPC } from "@/trpc/client";
 
 function DocListViewSkeleton() {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {Array.from({ length: 8 }).map((_, index) => (
         <DocCardSkeleton key={index} />
       ))}
@@ -72,19 +72,12 @@ export function DocListView() {
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 p-6 lg:p-10">
-      <HeaderActions slot="actions">
-        <Button size="sm" variant="outline" disabled={createDoc.isPending} onClick={handleCreate}>
+      <SectionHeader title="Docs" description="Write notes, drafts, and everything in between.">
+        <Button size="sm" variant="default" disabled={createDoc.isPending} onClick={handleCreate}>
           <PlusIcon />
           New doc
         </Button>
-      </HeaderActions>
-
-      <header>
-        <h1 className="text-3xl font-medium">Docs</h1>
-        <p className="text-muted-foreground text-sm">
-          Write notes, drafts, and everything in between.
-        </p>
-      </header>
+      </SectionHeader>
 
       <DocsToolbar />
 
@@ -132,10 +125,10 @@ function DocListViewSuspense({ onCreate, creating }: { onCreate: () => void; cre
 
   if (total === 0 && !searching) {
     return (
-      <Empty className="py-20">
+      <Empty className="bg-muted/50 border-border/50 rounded-2xl border-dashed py-24">
         <EmptyHeader>
           <EmptyMedia>
-            <FileTextIcon className="size-10" />
+            <FileTextIcon className="size-12" />
           </EmptyMedia>
           <EmptyTitle>No docs yet</EmptyTitle>
           <EmptyDescription>Create your first doc to get started.</EmptyDescription>
@@ -150,10 +143,10 @@ function DocListViewSuspense({ onCreate, creating }: { onCreate: () => void; cre
 
   if (total === 0) {
     return (
-      <Empty className="py-20">
+      <Empty className="bg-muted/50 border-border/50 rounded-2xl border-dashed py-24">
         <EmptyHeader>
           <EmptyMedia>
-            <SearchIcon className="size-10" />
+            <SearchIcon className="size-12" />
           </EmptyMedia>
           <EmptyTitle>No docs match &ldquo;{q}&rdquo;</EmptyTitle>
           <EmptyDescription>Try a different search term.</EmptyDescription>
@@ -167,11 +160,11 @@ function DocListViewSuspense({ onCreate, creating }: { onCreate: () => void; cre
 
   return (
     <>
-      <p className="text-muted-foreground text-sm">
+      <p className="text-muted-foreground text-sm font-medium">
         Showing {rangeStart}&ndash;{rangeEnd} of {total} {total === 1 ? "doc" : "docs"}
       </p>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {items.map((doc) => (
           <DocCard key={doc.id} data={doc} />
         ))}

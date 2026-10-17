@@ -17,7 +17,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import { getPageItems, getTotalPages } from "@/lib/pagination";
 
 import { ErrorState } from "@/components/error-state";
-import { HeaderActions } from "@/components/header-actions";
+import { SectionHeader } from "@/components/section-header";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -72,19 +72,12 @@ export function KanbanListView() {
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 p-6 lg:p-10">
-      <HeaderActions slot="actions">
-        <Button size="sm" variant="outline" disabled={createBoard.isPending} onClick={handleCreate}>
+      <SectionHeader title="Kanban" description="Plan work across to-do, in-progress, and done.">
+        <Button size="sm" variant="default" disabled={createBoard.isPending} onClick={handleCreate}>
           <PlusIcon />
           New board
         </Button>
-      </HeaderActions>
-
-      <header>
-        <h1 className="text-3xl font-medium">Kanban</h1>
-        <p className="text-muted-foreground text-sm">
-          Plan work across to-do, in-progress, and done.
-        </p>
-      </header>
+      </SectionHeader>
 
       <KanbanToolbar />
 

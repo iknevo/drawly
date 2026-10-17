@@ -18,7 +18,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardAction, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -92,41 +92,57 @@ export function DocCard({ data }: { data: docsListItem }) {
   return (
     <>
       <Card size="sm">
-        <div className="flex items-start gap-2 px-3">
-          <Link href={`/docs/${data.id}`} className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span className="flex items-center gap-2">
-              <FileTextIcon className="text-muted-foreground size-4 shrink-0" />
-              <span className="truncate font-medium">{data.title}</span>
-            </span>
-            <span className="text-muted-foreground text-xs">
-              edited {formatDistanceToNow(new Date(data.updatedAt), { addSuffix: true })}
-            </span>
+        <CardHeader className="grid-cols-[1fr_auto]">
+          <Link href={`/docs/${data.id}`} className="flex min-w-0 items-center gap-2">
+            <FileTextIcon className="text-muted-foreground size-4 shrink-0" />
+            <span className="truncate font-medium">{data.title}</span>
           </Link>
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={<Button variant="ghost" size="icon-sm" aria-label="Doc actions" />}
-            >
-              <MoreHorizontalIcon />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setRenameTarget({ id: data.id, title: data.title })}>
-                <PencilIcon />
-                Rename
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                disabled={duplicateDoc.isPending}
-                onClick={() => duplicateDoc.mutate({ id: data.id })}
-              >
-                <CopyIcon />
-                Duplicate
-              </DropdownMenuItem>
-              <DropdownMenuItem variant="destructive" onClick={() => setDeleteOpen(true)}>
-                <Trash2Icon />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+          <CardAction>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={({ ...triggerProps }) => (
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    {...triggerProps}
+                    onClick={(event) => {
+                      triggerProps.onClick?.(event);
+                      event.stopPropagation();
+                    }}
+                    className={triggerProps.className}
+                    aria-label="Doc actions"
+                  >
+                    <MoreHorizontalIcon />
+                  </Button>
+                )}
+              />
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() => setRenameTarget({ id: data.id, title: data.title })}
+                >
+                  <PencilIcon />
+                  Rename
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={duplicateDoc.isPending}
+                  onClick={() => duplicateDoc.mutate({ id: data.id })}
+                >
+                  <CopyIcon />
+                  Duplicate
+                </DropdownMenuItem>
+                <DropdownMenuItem variant="destructive" onClick={() => setDeleteOpen(true)}>
+                  <Trash2Icon />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </CardAction>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <span className="text-muted-foreground text-xs">
+            edited {formatDistanceToNow(new Date(data.updatedAt), { addSuffix: true })}
+          </span>
+        </CardContent>
       </Card>
 
       <Dialog

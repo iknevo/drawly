@@ -1,6 +1,10 @@
 "use client";
 
 import { DocEditor, type DocEditorHandle, type DocSaveStatus } from "../components/doc-editor";
+import { MarkdownModeToggle } from "../components/markdown-mode-toggle";
+import { PreviewToggle } from "../components/preview-toggle";
+import { useMarkdownMode } from "../lib/markdown-mode";
+import { usePreviewEnabled } from "../lib/preview-mode";
 import { setVimEnabled, useVimEnabled } from "../lib/vim-mode";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeftIcon, MoreHorizontalIcon, Trash2Icon } from "lucide-react";
@@ -59,6 +63,8 @@ export function DocDetailView({ docId }: { docId: string }) {
   const editorRef = useRef<DocEditorHandle>(null);
   const [status, setStatus] = useState<DocSaveStatus>("saved");
   const vimEnabled = useVimEnabled();
+  const markdownMode = useMarkdownMode();
+  const previewEnabled = usePreviewEnabled();
   const [vimMode, setVimMode] = useState<Mode>("insert");
   const [editing, setEditing] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
@@ -178,6 +184,10 @@ export function DocDetailView({ docId }: { docId: string }) {
         )}
 
         <div className="ml-auto flex items-center gap-2">
+          <MarkdownModeToggle enabled={markdownMode} />
+
+          {markdownMode ? <PreviewToggle enabled={previewEnabled} /> : null}
+
           <Button
             variant={vimEnabled ? "secondary" : "ghost"}
             size="xs"
@@ -190,7 +200,7 @@ export function DocDetailView({ docId }: { docId: string }) {
             VIM
           </Button>
 
-          {vimEnabled ? (
+          {!markdownMode && vimEnabled ? (
             <span data-vim-mode={vimMode} className="text-muted-foreground font-mono text-xs">
               -- {MODE_LABEL[vimMode]} --
             </span>
@@ -221,6 +231,8 @@ export function DocDetailView({ docId }: { docId: string }) {
         content={data.content}
         rev={data.rev}
         vimEnabled={vimEnabled}
+        markdownMode={markdownMode}
+        previewEnabled={previewEnabled}
         onStatus={setStatus}
         onMode={setVimMode}
       />

@@ -165,10 +165,14 @@
     @apply bg-muted rounded px-1.5 py-0.5 font-mono text-sm;
   }
   .doc-editor .ProseMirror pre {
-    @apply bg-muted overflow-x-auto rounded-md p-4 font-mono text-sm;
+    @apply overflow-x-auto rounded-md p-4 font-mono text-sm;
+    background: #f6f8fa;
   }
   .doc-editor .ProseMirror pre code {
     @apply bg-transparent p-0;
+  }
+  .dark .doc-editor .ProseMirror pre {
+    background: #0d1117;
   }
   .doc-editor .ProseMirror a {
     @apply text-primary underline underline-offset-4;
@@ -188,6 +192,208 @@
   .doc-editor .ProseMirror p.is-editor-empty:first-child::before {
     content: attr(data-placeholder);
     @apply text-muted-foreground pointer-events-none float-left h-0;
+  }
+  .doc-editor .doc-preview .ProseMirror p.is-editor-empty:first-child::before {
+    content: none;
+  }
+  .doc-editor .ProseMirror img {
+    @apply my-2 max-w-full rounded-md;
+    height: auto;
+  }
+  .doc-editor .ProseMirror img.ProseMirror-selectednode {
+    @apply ring-ring ring-2;
+  }
+  .doc-editor .ProseMirror .tableWrapper {
+    @apply my-4 overflow-x-auto;
+  }
+  .doc-editor .ProseMirror table {
+    @apply w-full border-collapse;
+    table-layout: fixed;
+  }
+  .doc-editor .ProseMirror th,
+  .doc-editor .ProseMirror td {
+    @apply border-border relative border p-2 align-top;
+    min-width: 1em;
+  }
+  .doc-editor .ProseMirror th {
+    @apply bg-muted font-semibold;
+  }
+  .doc-editor .ProseMirror .selectedCell::after {
+    content: "";
+    @apply pointer-events-none absolute inset-0;
+    background: color-mix(in oklab, var(--primary) 18%, transparent);
+  }
+  .doc-editor .ProseMirror .column-resize-handle {
+    @apply bg-primary pointer-events-none absolute;
+    top: 0;
+    right: -2px;
+    bottom: -2px;
+    width: 2px;
+  }
+  .doc-editor .ProseMirror.resize-cursor {
+    cursor: col-resize;
+  }
+  .doc-editor .ProseMirror .hljs {
+    color: #24292e;
+    background: #f6f8fa;
+  }
+  .dark .doc-editor .ProseMirror .hljs {
+    color: #c9d1d9;
+    background: #0d1117;
+  }
+  .doc-editor .ProseMirror .hljs-doctag,
+  .doc-editor .ProseMirror .hljs-keyword,
+  .doc-editor .ProseMirror .hljs-meta .hljs-keyword,
+  .doc-editor .ProseMirror .hljs-template-tag,
+  .doc-editor .ProseMirror .hljs-template-variable,
+  .doc-editor .ProseMirror .hljs-type,
+  .doc-editor .ProseMirror .hljs-variable.language_ {
+    color: #d73a49;
+  }
+  .dark .doc-editor .ProseMirror .hljs-doctag,
+  .dark .doc-editor .ProseMirror .hljs-keyword,
+  .dark .doc-editor .ProseMirror .hljs-meta .hljs-keyword,
+  .dark .doc-editor .ProseMirror .hljs-template-tag,
+  .dark .doc-editor .ProseMirror .hljs-template-variable,
+  .dark .doc-editor .ProseMirror .hljs-type,
+  .dark .doc-editor .ProseMirror .hljs-variable.language_ {
+    color: #ff7b72;
+  }
+  .doc-editor .ProseMirror .hljs-title,
+  .doc-editor .ProseMirror .hljs-title.class_,
+  .doc-editor .ProseMirror .hljs-title.class_.inherited__,
+  .doc-editor .ProseMirror .hljs-title.function_ {
+    color: #6f42c1;
+  }
+  .dark .doc-editor .ProseMirror .hljs-title,
+  .dark .doc-editor .ProseMirror .hljs-title.class_,
+  .dark .doc-editor .ProseMirror .hljs-title.class_.inherited__,
+  .dark .doc-editor .ProseMirror .hljs-title.function_ {
+    color: #d2a8ff;
+  }
+  .doc-editor .ProseMirror .hljs-attr,
+  .doc-editor .ProseMirror .hljs-attribute,
+  .doc-editor .ProseMirror .hljs-literal,
+  .doc-editor .ProseMirror .hljs-meta,
+  .doc-editor .ProseMirror .hljs-number,
+  .doc-editor .ProseMirror .hljs-operator,
+  .doc-editor .ProseMirror .hljs-variable,
+  .doc-editor .ProseMirror .hljs-selector-attr,
+  .doc-editor .ProseMirror .hljs-selector-class,
+  .doc-editor .ProseMirror .hljs-selector-id {
+    color: #005cc5;
+  }
+  .dark .doc-editor .ProseMirror .hljs-attr,
+  .dark .doc-editor .ProseMirror .hljs-attribute,
+  .dark .doc-editor .ProseMirror .hljs-literal,
+  .dark .doc-editor .ProseMirror .hljs-meta,
+  .dark .doc-editor .ProseMirror .hljs-number,
+  .dark .doc-editor .ProseMirror .hljs-operator,
+  .dark .doc-editor .ProseMirror .hljs-variable,
+  .dark .doc-editor .ProseMirror .hljs-selector-attr,
+  .dark .doc-editor .ProseMirror .hljs-selector-class,
+  .dark .doc-editor .ProseMirror .hljs-selector-id {
+    color: #79c0ff;
+  }
+  .doc-editor .ProseMirror .hljs-regexp,
+  .doc-editor .ProseMirror .hljs-string,
+  .doc-editor .ProseMirror .hljs-meta .hljs-string {
+    color: #032f62;
+  }
+  .dark .doc-editor .ProseMirror .hljs-regexp,
+  .dark .doc-editor .ProseMirror .hljs-string,
+  .dark .doc-editor .ProseMirror .hljs-meta .hljs-string {
+    color: #a5d6ff;
+  }
+  .doc-editor .ProseMirror .hljs-built_in,
+  .doc-editor .ProseMirror .hljs-symbol {
+    color: #e36209;
+  }
+  .dark .doc-editor .ProseMirror .hljs-built_in,
+  .dark .doc-editor .ProseMirror .hljs-symbol {
+    color: #ffa657;
+  }
+  .doc-editor .ProseMirror .hljs-comment,
+  .doc-editor .ProseMirror .hljs-code,
+  .doc-editor .ProseMirror .hljs-formula {
+    color: #6a737d;
+  }
+  .dark .doc-editor .ProseMirror .hljs-comment,
+  .dark .doc-editor .ProseMirror .hljs-code,
+  .dark .doc-editor .ProseMirror .hljs-formula {
+    color: #8b949e;
+  }
+  .doc-editor .ProseMirror .hljs-name,
+  .doc-editor .ProseMirror .hljs-quote,
+  .doc-editor .ProseMirror .hljs-selector-tag,
+  .doc-editor .ProseMirror .hljs-selector-pseudo {
+    color: #22863a;
+  }
+  .dark .doc-editor .ProseMirror .hljs-name,
+  .dark .doc-editor .ProseMirror .hljs-quote,
+  .dark .doc-editor .ProseMirror .hljs-selector-tag,
+  .dark .doc-editor .ProseMirror .hljs-selector-pseudo {
+    color: #7ee787;
+  }
+  .doc-editor .ProseMirror .hljs-subst {
+    color: #24292e;
+  }
+  .dark .doc-editor .ProseMirror .hljs-subst {
+    color: #c9d1d9;
+  }
+  .doc-editor .ProseMirror .hljs-section {
+    color: #005cc5;
+    font-weight: bold;
+  }
+  .dark .doc-editor .ProseMirror .hljs-section {
+    color: #1f6feb;
+    font-weight: bold;
+  }
+  .doc-editor .ProseMirror .hljs-bullet {
+    color: #735c0f;
+  }
+  .dark .doc-editor .ProseMirror .hljs-bullet {
+    color: #f2cc60;
+  }
+  .doc-editor .ProseMirror .hljs-emphasis {
+    color: #24292e;
+    font-style: italic;
+  }
+  .dark .doc-editor .ProseMirror .hljs-emphasis {
+    color: #c9d1d9;
+    font-style: italic;
+  }
+  .doc-editor .ProseMirror .hljs-strong {
+    color: #24292e;
+    font-weight: bold;
+  }
+  .dark .doc-editor .ProseMirror .hljs-strong {
+    color: #c9d1d9;
+    font-weight: bold;
+  }
+  .doc-editor .ProseMirror .hljs-addition {
+    color: #22863a;
+    background-color: #f0fff4;
+  }
+  .dark .doc-editor .ProseMirror .hljs-addition {
+    color: #aff5b4;
+    background-color: #033a16;
+  }
+  .doc-editor .ProseMirror .hljs-deletion {
+    color: #b31d28;
+    background-color: #ffeef0;
+  }
+  .dark .doc-editor .ProseMirror .hljs-deletion {
+    color: #ffdcd7;
+    background-color: #67060c;
+  }
+  .doc-editor .ProseMirror .hljs-char.escape_,
+  .doc-editor .ProseMirror .hljs-link,
+  .doc-editor .ProseMirror .hljs-params,
+  .doc-editor .ProseMirror .hljs-property,
+  .doc-editor .ProseMirror .hljs-punctuation,
+  .doc-editor .ProseMirror .hljs-tag {
+    /* purposely ignored */
   }
 }
 
