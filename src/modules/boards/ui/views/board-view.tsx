@@ -5,6 +5,7 @@ import {
   type QuickdrawCanvasHandle,
   type SaveStatus,
 } from "../components/quickdraw-canvas";
+import { SaveStatusLabel } from "../components/save-status-label";
 import { ShareMenu } from "../components/share-menu";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeftIcon, MoreHorizontalIcon, Trash2Icon } from "lucide-react";
@@ -34,33 +35,6 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/toast";
 
 import { useTRPC } from "@/trpc/client";
-
-const STATUS_LABELS: Record<SaveStatus, string> = {
-  saved: "Saved",
-  dirty: "Unsaved changes",
-  saving: "Saving…",
-  error: "Couldn't save — retrying",
-  offline: "Offline — changes pending",
-};
-
-function SaveStatusLabel({ status }: { status: SaveStatus }) {
-  const emphasize = status === "error" || status === "offline";
-
-  return (
-    <span
-      className={
-        emphasize
-          ? "text-destructive flex items-center gap-1.5 text-xs"
-          : "text-muted-foreground flex items-center gap-1.5 text-xs"
-      }
-    >
-      {status === "saving" && (
-        <span className="border-muted border-t-foreground size-3 animate-spin rounded-full border-[1.5px]" />
-      )}
-      {STATUS_LABELS[status]}
-    </span>
-  );
-}
 
 export function BoardView({ boardId }: { boardId: string }) {
   const trpc = useTRPC();

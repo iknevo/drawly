@@ -11,7 +11,7 @@ import {
   PlusIcon,
   SunIcon,
 } from "lucide-react";
-import { type ReactNode, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +24,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
+import { ControlButton } from "./control-button";
+
 export const GRID_OPTIONS: { id: GridId; label: string }[] = [
   { id: "none", label: "None" },
   { id: "lines", label: "Lines" },
@@ -32,27 +34,6 @@ export const GRID_OPTIONS: { id: GridId; label: string }[] = [
   { id: "crosses", label: "Crosses" },
   { id: "iso", label: "Isometric" },
 ];
-
-function ControlButton({
-  label,
-  onClick,
-  children,
-}: {
-  label: string;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <Tooltip>
-      <TooltipTrigger
-        render={<Button variant="ghost" size="icon-sm" aria-label={label} onClick={onClick} />}
-      >
-        {children}
-      </TooltipTrigger>
-      <TooltipContent>{label}</TooltipContent>
-    </Tooltip>
-  );
-}
 
 interface CanvasControlsProps {
   grid: GridId;

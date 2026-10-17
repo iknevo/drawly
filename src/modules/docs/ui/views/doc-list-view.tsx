@@ -1,6 +1,7 @@
 "use client";
 
 import { DocCard, DocCardSkeleton } from "../components/doc-card";
+import { DocsToolbar } from "../components/docs-toolbar";
 import {
   keepPreviousData,
   useMutation,
@@ -8,12 +9,12 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import { cn } from "cn";
-import { FileTextIcon, PlusIcon, SearchIcon, XIcon } from "lucide-react";
+import { FileTextIcon, PlusIcon, SearchIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 
-import { PAGE_SIZE_VALUES, type PageSize, getPageItems, getTotalPages } from "@/lib/pagination";
+import { getPageItems, getTotalPages } from "@/lib/pagination";
 
 import { ErrorState } from "@/components/error-state";
 import { HeaderActions } from "@/components/header-actions";
@@ -25,7 +26,6 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { Input } from "@/components/ui/input";
 import {
   Pagination,
   PaginationContent,
@@ -35,107 +35,13 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { toast } from "@/components/ui/toast";
 
-import type { DocSort } from "@/modules/docs/lib/list-params";
 import { pageHref } from "@/modules/docs/lib/pagination";
 import { useDocListParams } from "@/modules/docs/ui/hooks/use-doc-list-params";
 import { useTRPC } from "@/trpc/client";
 
-function DocsToolbar() {
-  const [{ size, q, sort }, setParams] = useDocListParams();
-
-  const [search, setSearch] = useState(q);
-  const [syncedQ, setSyncedQ] = useState(q);
-
-  if (q !== syncedQ) {
-    setSyncedQ(q);
-    setSearch(q);
-  }
-
-  useEffect(() => {
-    if (search === q) return;
-    const timer = setTimeout(() => {
-      void setParams({ q: search.trim(), page: 1 });
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [search, q, setParams]);
-
-  const clearSearch = () => {
-    setSearch("");
-    void setParams({ q: "", page: 1 });
-  };
-
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <div className="relative w-full max-w-xs">
-        <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
-        <Input
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search docs…"
-          aria-label="Search docs"
-          className="pl-8"
-        />
-        {search.length > 0 && (
-          <button
-            type="button"
-            onClick={clearSearch}
-            aria-label="Clear search"
-            className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2 -translate-y-1/2"
-          >
-            <XIcon className="size-4" />
-          </button>
-        )}
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="text-muted-foreground text-sm">Sort</span>
-        <Select
-          value={sort}
-          onValueChange={(value) => {
-            void setParams({ sort: value as DocSort, page: 1 });
-          }}
-        >
-          <SelectTrigger size="sm" aria-label="Sort docs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent alignItemWithTrigger={false} align="end">
-            <SelectItem value="updated">Last edited</SelectItem>
-            <SelectItem value="created">Recently created</SelectItem>
-            <SelectItem value="title">Title (A–Z)</SelectItem>
-          </SelectContent>
-        </Select>
-        <span className="text-muted-foreground text-sm">Per page</span>
-        <Select
-          value={size}
-          onValueChange={(value) => {
-            void setParams({ size: value as PageSize, page: 1 });
-          }}
-        >
-          <SelectTrigger size="sm" aria-label="Docs per page">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent alignItemWithTrigger={false} align="end">
-            {PAGE_SIZE_VALUES.map((value) => (
-              <SelectItem key={value} value={value}>
-                {value}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-    </div>
-  );
-}
-
-function DocsGridSkeleton() {
+function DocListViewSkeleton() {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {Array.from({ length: 8 }).map((_, index) => (
@@ -182,18 +88,18 @@ export function DocListView() {
 
       <DocsToolbar />
 
-      <Suspense fallback={<DocsGridSkeleton />}>
+      <Suspense fallback={<DocListViewSkeleton />}>
         <ErrorBoundary
           fallbackRender={({ resetErrorBoundary }) => <ErrorState onRetry={resetErrorBoundary} />}
         >
-          <DocsListContent onCreate={handleCreate} creating={createDoc.isPending} />
+          <DocListViewSuspense onCreate={handleCreate} creating={createDoc.isPending} />
         </ErrorBoundary>
       </Suspense>
     </div>
   );
 }
 
-function DocsListContent({ onCreate, creating }: { onCreate: () => void; creating: boolean }) {
+function DocListViewSuspense({ onCreate, creating }: { onCreate: () => void; creating: boolean }) {
   const trpc = useTRPC();
 
   const [{ page, size, q, sort }, setParams] = useDocListParams();

@@ -1,15 +1,14 @@
 "use client";
 
-import { useTheme } from "@teispace/next-themes";
-import { MoonIcon, SunIcon, UserIcon } from "lucide-react";
+import { UserIcon } from "lucide-react";
 import { Poppins } from "next/font/google";
 import Link from "next/link";
-import { useSyncExternalStore } from "react";
 
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
 import { DevMenu } from "@/components/home/dev-menu";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -25,28 +24,6 @@ const poppins = Poppins({
   subsets: ["latin"],
   weight: ["700"],
 });
-
-function ThemeToggle() {
-  const { resolvedTheme, setTheme } = useTheme();
-  const isMounted = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false
-  );
-
-  if (!isMounted) return null;
-
-  return (
-    <Button
-      variant="ghost"
-      size="icon-sm"
-      aria-label="Toggle theme"
-      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-    >
-      {resolvedTheme === "dark" ? <SunIcon /> : <MoonIcon />}
-    </Button>
-  );
-}
 
 export function AppHeader() {
   const { data } = authClient.useSession();

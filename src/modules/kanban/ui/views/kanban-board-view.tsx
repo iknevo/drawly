@@ -1,7 +1,7 @@
 "use client";
 
 import { CardDetailDialog } from "../components/card-detail-dialog";
-import { KanbanCardShell } from "../components/kanban-card";
+import { KanbanCardShell } from "../components/kanban-card-shell";
 import { KanbanColumn } from "../components/kanban-column";
 import {
   crossColumnMove,

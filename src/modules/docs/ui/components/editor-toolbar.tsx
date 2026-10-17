@@ -18,42 +18,13 @@ import {
   Undo2Icon,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+
+import { ToolbarButton } from "./toolbar-button";
 
 type EditorToolbarProps = {
   editor: Editor | null;
 };
-
-function ToolbarButton({
-  editor,
-  label,
-  active,
-  disabled,
-  onClick,
-  children,
-}: {
-  editor: Editor | null;
-  label: string;
-  active?: boolean;
-  disabled?: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <Button
-      type="button"
-      variant={active ? "secondary" : "ghost"}
-      size="icon-sm"
-      aria-label={label}
-      aria-pressed={active}
-      disabled={!editor || disabled}
-      onClick={onClick}
-    >
-      {children}
-    </Button>
-  );
-}
 
 export function EditorToolbar({ editor }: EditorToolbarProps) {
   if (!editor) return null;
