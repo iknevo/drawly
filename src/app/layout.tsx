@@ -71,7 +71,6 @@ export default function RootLayout({
               <SoundProvider>
                 <TooltipProvider>
                   {children}
-                  <PWAInstallPrompt />
                   <Toaster />
                   <ReactQueryDevtools initialIsOpen={false} />
                 </TooltipProvider>
