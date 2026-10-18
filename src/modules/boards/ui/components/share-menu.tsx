@@ -64,7 +64,7 @@ export function ShareMenu({ boardId, isPublic }: ShareMenuProps) {
     })
   );
 
-  const url = `${origin}/s/${boardId}`;
+  const url = `${origin}/boards/share/${boardId}`;
 
   const copyLink = async () => {
     try {
