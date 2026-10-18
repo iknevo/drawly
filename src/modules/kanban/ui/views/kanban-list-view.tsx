@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 
 import { ErrorState } from "@/components/error-state";
 import { SectionHeader } from "@/components/section-header";
+import { useSound } from "@/components/sound-provider";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -26,7 +27,6 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { useSound } from "@/components/sound-provider";
 import {
   Pagination,
   PaginationContent,

@@ -15,6 +15,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { useSound } from "@/components/sound-provider";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,7 +37,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Progress, ProgressLabel } from "@/components/ui/progress";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,8 +45,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Progress, ProgressLabel } from "@/components/ui/progress";
 import { toast } from "@/components/ui/toast";
-import { useSound } from "@/components/sound-provider";
 
 import { PHASE_LABEL } from "@/modules/sessions/lib/pomodoro";
 import { formatClock, formatDuration } from "@/modules/sessions/lib/time";

@@ -32,6 +32,9 @@ import { useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
+import { useSound } from "@/components/sound-provider";
+import { SoundToggle } from "@/components/sound-toggle";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,9 +55,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/toast";
-import { useSound } from "@/components/sound-provider";
-import { SoundToggle } from "@/components/sound-toggle";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 import type { kanbanCard, kanbanColumn } from "@/modules/kanban/types/types";
 import { useTRPC } from "@/trpc/client";

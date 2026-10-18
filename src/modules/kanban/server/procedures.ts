@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import mongoose from "mongoose";
 
 import { KanbanBoard } from "@/lib/models/kanban-board";
+import { buildSortSpec, escapeRegExp } from "@/lib/search";
 
 import {
   createCardSchema,
@@ -13,7 +14,6 @@ import {
   reorderCardsSchema,
   updateCardSchema,
 } from "@/modules/kanban/validation";
-import { buildSortSpec, escapeRegExp } from "@/lib/search";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 
 type CardShape = { id: string; title: string; description: string; dueDate: string | null };

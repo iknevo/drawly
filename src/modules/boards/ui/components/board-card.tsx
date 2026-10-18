@@ -15,6 +15,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { useSound } from "@/components/sound-provider";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,7 +45,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/toast";
-import { useSound } from "@/components/sound-provider";
 
 import { useTRPC } from "@/trpc/client";
 

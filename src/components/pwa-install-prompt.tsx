@@ -1,9 +1,9 @@
 "use client";
 
+import { DownloadIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { DownloadIcon } from "lucide-react";
 
 export function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -61,11 +61,11 @@ export function PWAInstallPrompt() {
   if (!isBrowser || (!deferredPrompt && !isInstalled)) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-50 flex items-center gap-3 rounded-xl bg-card p-4 shadow-lg border border-border">
+    <div className="bg-card border-border fixed right-4 bottom-4 left-4 z-50 flex items-center gap-3 rounded-xl border p-4 shadow-lg">
       <DownloadIcon className="size-5" />
       <div className="flex-1">
         <h3 className="text-sm font-medium">Install Drawly</h3>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-muted-foreground text-xs">
           Add Drawly to your home screen for quick access.
         </p>
       </div>

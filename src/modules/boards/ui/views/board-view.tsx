@@ -13,6 +13,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
+import { useSound } from "@/components/sound-provider";
+import { SoundToggle } from "@/components/sound-toggle";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,9 +36,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/toast";
-import { SoundToggle } from "@/components/sound-toggle";
-import { useSound } from "@/components/sound-provider";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 import { useTRPC } from "@/trpc/client";
 
