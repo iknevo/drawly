@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
-import type { SortOrder } from "mongoose";
 
 import { Doc } from "@/lib/models/doc";
+import { buildSortSpec, escapeRegExp } from "@/lib/search";
 
 import {
   createDocSchema,
@@ -11,10 +11,6 @@ import {
   saveDocSchema,
 } from "@/modules/docs/validation";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 
 const EMPTY_CONTENT = { type: "doc", content: [{ type: "paragraph" }] };
 
@@ -30,12 +26,7 @@ export const docsRouter = createTRPCRouter({
       filter.title = { $regex: escapeRegExp(q), $options: "i" };
     }
 
-    const sortSpec: Record<string, SortOrder> =
-      sort === "title"
-        ? { title: 1, updatedAt: -1 }
-        : sort === "created"
-          ? { createdAt: -1 }
-          : { updatedAt: -1 };
+    const sortSpec = buildSortSpec(sort);
 
     const [docs, total] = await Promise.all([
       Doc.find(filter)

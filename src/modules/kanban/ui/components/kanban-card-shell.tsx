@@ -1,7 +1,7 @@
 "use client";
 
 import { formatDueDate, getDueStyle } from "../lib/due-date";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 import { CalendarDaysIcon, GripVerticalIcon } from "lucide-react";
 
 import type { kanbanCard } from "@/modules/kanban/types/types";

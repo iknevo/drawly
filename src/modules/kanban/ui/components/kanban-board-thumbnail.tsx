@@ -1,7 +1,7 @@
 "use client";
 
 import { getColumnStatusStyle } from "../lib/status";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 import { KanbanIcon } from "lucide-react";
 
 import type { kanbanListItem } from "@/modules/kanban/types/types";

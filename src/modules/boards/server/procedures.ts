@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
-import type { SortOrder } from "mongoose";
 
 import { Board } from "@/lib/models/board";
+import { buildSortSpec, escapeRegExp } from "@/lib/search";
 
 import { TEMPLATE_LABELS } from "@/modules/boards/lib/templates";
 import { TEMPLATE_SNAPSHOTS } from "@/modules/boards/server/templates";
@@ -16,10 +16,6 @@ import {
 } from "@/modules/boards/validation";
 import { baseProcedure, createTRPCRouter, protectedProcedure } from "@/trpc/init";
 
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 export const boardsRouter = createTRPCRouter({
   list: protectedProcedure.input(listBoardsSchema).query(async ({ ctx, input }) => {
     const { page, pageSize, q, sort } = input;
@@ -32,12 +28,7 @@ export const boardsRouter = createTRPCRouter({
       filter.title = { $regex: escapeRegExp(q), $options: "i" };
     }
 
-    const sortSpec: Record<string, SortOrder> =
-      sort === "title"
-        ? { title: 1, updatedAt: -1 }
-        : sort === "created"
-          ? { createdAt: -1 }
-          : { updatedAt: -1 };
+    const sortSpec = buildSortSpec(sort);
 
     const [boards, total] = await Promise.all([
       Board.find(filter)

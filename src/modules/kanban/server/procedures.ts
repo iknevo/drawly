@@ -1,6 +1,5 @@
 import { TRPCError } from "@trpc/server";
 import mongoose from "mongoose";
-import type { SortOrder } from "mongoose";
 
 import { KanbanBoard } from "@/lib/models/kanban-board";
 
@@ -14,11 +13,8 @@ import {
   reorderCardsSchema,
   updateCardSchema,
 } from "@/modules/kanban/validation";
+import { buildSortSpec, escapeRegExp } from "@/lib/search";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 
 type CardShape = { id: string; title: string; description: string; dueDate: string | null };
 type ColumnShape = { id: string; title: string; cards: CardShape[] };
@@ -58,12 +54,7 @@ export const kanbanRouter = createTRPCRouter({
       filter.title = { $regex: escapeRegExp(input.q), $options: "i" };
     }
 
-    const sortSpec: Record<string, SortOrder> =
-      input.sort === "title"
-        ? { title: 1, updatedAt: -1 }
-        : input.sort === "created"
-          ? { createdAt: -1 }
-          : { updatedAt: -1 };
+    const sortSpec = buildSortSpec(input.sort);
 
     const [boards, total] = await Promise.all([
       KanbanBoard.find(filter)

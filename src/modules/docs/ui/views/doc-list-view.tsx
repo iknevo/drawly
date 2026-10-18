@@ -8,7 +8,7 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 import { FileTextIcon, PlusIcon, SearchIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Suspense, useEffect } from "react";

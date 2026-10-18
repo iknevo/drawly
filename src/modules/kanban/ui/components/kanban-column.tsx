@@ -3,7 +3,7 @@
 import { getColumnStatusStyle } from "../lib/status";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 import { PlusIcon } from "lucide-react";
 import { useState } from "react";
 
