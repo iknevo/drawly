@@ -25,11 +25,12 @@ import {
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { cn } from "@/lib/utils";
 import { ArrowLeftIcon, MoreHorizontalIcon, Trash2Icon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
+
+import { cn } from "@/lib/utils";
 
 import {
   AlertDialog,
@@ -51,6 +52,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/toast";
+import { useSound } from "@/components/sound-provider";
+import { SoundToggle } from "@/components/sound-toggle";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 import type { kanbanCard, kanbanColumn } from "@/modules/kanban/types/types";
 import { useTRPC } from "@/trpc/client";
@@ -60,6 +64,7 @@ const REAL_ID = /^[a-f0-9]{24}$/i;
 export function KanbanBoardView({ boardId }: { boardId: string }) {
   const trpc = useTRPC();
   const router = useRouter();
+  const { play } = useSound();
   const queryClient = useQueryClient();
 
   const board = useQuery(trpc.kanban.get.queryOptions({ id: boardId }));
@@ -103,6 +108,7 @@ export function KanbanBoardView({ boardId }: { boardId: string }) {
   const removeBoard = useMutation(
     trpc.kanban.remove.mutationOptions({
       onSuccess: async () => {
+        play("delete");
         await queryClient.invalidateQueries(trpc.kanban.list.queryFilter());
         router.push("/kanban");
       },
@@ -454,6 +460,8 @@ export function KanbanBoardView({ boardId }: { boardId: string }) {
         )}
 
         <div className="ml-auto flex items-center gap-3">
+          <SoundToggle />
+          <ThemeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger
               render={<Button variant="ghost" size="icon-sm" aria-label="Board actions" />}

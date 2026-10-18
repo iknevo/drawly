@@ -66,6 +66,7 @@ export function NewBoardMenu({
         <NavigationMenuItem>
           <NavigationMenuTrigger
             disabled={disabled}
+            data-sound-hover
             render={<Button size={size} variant="outline" disabled={disabled} />}
           >
             <PlusIcon />

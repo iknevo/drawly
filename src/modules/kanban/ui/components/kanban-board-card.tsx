@@ -36,6 +36,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/toast";
+import { useSound } from "@/components/sound-provider";
 
 import { KanbanBoardThumbnail } from "./kanban-board-thumbnail";
 import type { kanbanListItem } from "@/modules/kanban/types/types";
@@ -57,6 +58,7 @@ export function KanbanBoardCard({ data }: { data: kanbanListItem }) {
   const trpc = useTRPC();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { play } = useSound();
 
   const [renameTarget, setRenameTarget] = useState<{ id: string; title: string } | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -74,6 +76,7 @@ export function KanbanBoardCard({ data }: { data: kanbanListItem }) {
   const removeBoard = useMutation(
     trpc.kanban.remove.mutationOptions({
       onSuccess: async () => {
+        play("delete");
         await queryClient.invalidateQueries(trpc.kanban.list.queryFilter());
         setDeleteOpen(false);
       },

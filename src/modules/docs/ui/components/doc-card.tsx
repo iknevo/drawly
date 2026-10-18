@@ -36,6 +36,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/toast";
+import { useSound } from "@/components/sound-provider";
 
 import type { docsListItem } from "@/modules/docs/types/types";
 import { useTRPC } from "@/trpc/client";
@@ -55,6 +56,7 @@ export function DocCard({ data }: { data: docsListItem }) {
   const trpc = useTRPC();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { play } = useSound();
 
   const [renameTarget, setRenameTarget] = useState<{ id: string; title: string } | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -72,6 +74,7 @@ export function DocCard({ data }: { data: docsListItem }) {
   const removeDoc = useMutation(
     trpc.docs.remove.mutationOptions({
       onSuccess: async () => {
+        play("delete");
         await queryClient.invalidateQueries(trpc.docs.list.queryFilter());
         setDeleteOpen(false);
       },

@@ -44,6 +44,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/toast";
+import { useSound } from "@/components/sound-provider";
 
 import { useTRPC } from "@/trpc/client";
 
@@ -69,6 +70,7 @@ export function BoardCard({ data }: BoardCardProps) {
   const trpc = useTRPC();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { play } = useSound();
 
   const [renameTarget, setRenameTarget] = useState<{ id: string; title: string } | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -86,6 +88,7 @@ export function BoardCard({ data }: BoardCardProps) {
   const removeBoard = useMutation(
     trpc.boards.remove.mutationOptions({
       onSuccess: async () => {
+        play("delete");
         await queryClient.invalidateQueries(trpc.boards.list.queryFilter());
         setDeleteOpen(false);
       },

@@ -33,12 +33,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/toast";
+import { SoundToggle } from "@/components/sound-toggle";
+import { useSound } from "@/components/sound-provider";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 import { useTRPC } from "@/trpc/client";
 
 export function BoardView({ boardId }: { boardId: string }) {
   const trpc = useTRPC();
   const router = useRouter();
+  const { play } = useSound();
   const queryClient = useQueryClient();
   const board = useQuery(trpc.boards.get.queryOptions({ id: boardId }));
   const [status, setStatus] = useState<SaveStatus>("saved");
@@ -74,6 +78,7 @@ export function BoardView({ boardId }: { boardId: string }) {
   const removeBoard = useMutation(
     trpc.boards.remove.mutationOptions({
       onSuccess: async () => {
+        play("delete");
         await queryClient.invalidateQueries(trpc.boards.list.queryFilter());
         router.push("/boards");
       },
@@ -171,6 +176,8 @@ export function BoardView({ boardId }: { boardId: string }) {
         <div className="ml-auto flex items-center gap-3">
           <SaveStatusLabel status={status} />
           <ShareMenu boardId={data.id} isPublic={data.isPublic} />
+          <SoundToggle />
+          <ThemeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger
               render={<Button variant="ghost" size="icon-sm" aria-label="Board actions" />}

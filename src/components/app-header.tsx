@@ -8,6 +8,7 @@ import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
 import { DevMenu } from "@/components/home/dev-menu";
+import { SoundToggle } from "@/components/sound-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,6 +39,7 @@ export function AppHeader() {
 
       <div className="ml-auto flex shrink-0 items-center gap-2">
         <div id="app-header-actions" className="flex items-center gap-2" />
+        <SoundToggle />
         <ThemeToggle />
         <DevMenu />
         {data?.user ? (

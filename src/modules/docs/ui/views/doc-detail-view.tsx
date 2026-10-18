@@ -33,6 +33,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/toast";
+import { useSound } from "@/components/sound-provider";
+import { SoundToggle } from "@/components/sound-toggle";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 import { useTRPC } from "@/trpc/client";
 
@@ -56,6 +59,7 @@ export function DocDetailView({ docId }: { docId: string }) {
   const trpc = useTRPC();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { play } = useSound();
 
   const doc = useQuery(trpc.docs.get.queryOptions({ id: docId }));
   const docKey = trpc.docs.get.queryKey({ id: docId });
@@ -96,8 +100,9 @@ export function DocDetailView({ docId }: { docId: string }) {
 
   const removeDoc = useMutation(
     trpc.docs.remove.mutationOptions({
-      onSuccess: async () => {
-        await queryClient.invalidateQueries(trpc.docs.list.queryFilter());
+      onSuccess: () => {
+        play("delete");
+        queryClient.invalidateQueries(trpc.docs.list.queryFilter());
         router.push("/docs");
       },
       onError: (error) => toast.add({ type: "error", description: error.message }),
@@ -207,6 +212,8 @@ export function DocDetailView({ docId }: { docId: string }) {
           ) : null}
 
           <span className="text-muted-foreground text-xs">{STATUS_LABEL[status]}</span>
+          <SoundToggle />
+          <ThemeToggle />
         </div>
 
         <DropdownMenu>

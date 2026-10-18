@@ -8,13 +8,13 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
-import { cn } from "@/lib/utils";
 import { KanbanIcon, PlusIcon, SearchIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Suspense, useEffect } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 
 import { getPageItems, getTotalPages } from "@/lib/pagination";
+import { cn } from "@/lib/utils";
 
 import { ErrorState } from "@/components/error-state";
 import { SectionHeader } from "@/components/section-header";
@@ -26,6 +26,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { useSound } from "@/components/sound-provider";
 import {
   Pagination,
   PaginationContent,
@@ -55,12 +56,14 @@ export function KanbanListView() {
   const router = useRouter();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  const { play } = useSound();
 
   const createBoard = useMutation(
     trpc.kanban.create.mutationOptions({
       onSuccess: async ({ id }) => {
-        await queryClient.invalidateQueries(trpc.kanban.list.queryFilter());
+        play("add");
         router.push(`/kanban/${id}`);
+        await queryClient.invalidateQueries(trpc.kanban.list.queryFilter());
       },
       onError: (error) => toast.add({ type: "error", description: error.message }),
     })

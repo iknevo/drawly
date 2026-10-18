@@ -5,6 +5,7 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 import { cn } from "@/lib/utils";
 
+import { SoundProvider } from "@/components/sound-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -42,12 +43,14 @@ export default function RootLayout({
         <NuqsAdapter>
           <TRPCReactProvider>
             <ThemeProvider>
-              <TooltipProvider>
-                {children}
-                <PWAInstallPrompt />
-                <Toaster />
-                <ReactQueryDevtools initialIsOpen={false} />
-              </TooltipProvider>
+              <SoundProvider>
+                <TooltipProvider>
+                  {children}
+                  <PWAInstallPrompt />
+                  <Toaster />
+                  <ReactQueryDevtools initialIsOpen={false} />
+                </TooltipProvider>
+              </SoundProvider>
             </ThemeProvider>
           </TRPCReactProvider>
         </NuqsAdapter>

@@ -8,13 +8,13 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
-import { cn } from "@/lib/utils";
 import { FileTextIcon, PlusIcon, SearchIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Suspense, useEffect } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 
 import { getPageItems, getTotalPages } from "@/lib/pagination";
+import { cn } from "@/lib/utils";
 
 import { ErrorState } from "@/components/error-state";
 import { SectionHeader } from "@/components/section-header";
@@ -26,6 +26,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { useSound } from "@/components/sound-provider";
 import {
   Pagination,
   PaginationContent,
@@ -55,12 +56,14 @@ export function DocListView() {
   const router = useRouter();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  const { play } = useSound();
 
   const createDoc = useMutation(
     trpc.docs.create.mutationOptions({
       onSuccess: async ({ id }) => {
-        await queryClient.invalidateQueries(trpc.docs.list.queryFilter());
+        play("add");
         router.push(`/docs/${id}`);
+        await queryClient.invalidateQueries(trpc.docs.list.queryFilter());
       },
       onError: (error) => toast.add({ type: "error", description: error.message }),
     })

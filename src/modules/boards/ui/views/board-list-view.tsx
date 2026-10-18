@@ -22,6 +22,7 @@ import { getPageItems, getTotalPages } from "@/lib/pagination";
 
 import { ErrorState } from "@/components/error-state";
 import { SectionHeader } from "@/components/section-header";
+import { useSound } from "@/components/sound-provider";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -58,9 +59,12 @@ export function BoardListView() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
+  const { play } = useSound();
+
   const createBoard = useMutation(
     trpc.boards.create.mutationOptions({
       onSuccess: async ({ id }) => {
+        play("add");
         router.push(`/board/${id}`);
         await queryClient.invalidateQueries(trpc.boards.list.queryFilter());
       },
