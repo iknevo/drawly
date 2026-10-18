@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Boards",
+  description: "Create, organize, and revisit your drawing boards.",
 };
 
 export default async function Page({ searchParams }: { searchParams: Promise<SearchParams> }) {

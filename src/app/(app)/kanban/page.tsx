@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Kanban",
+  description: "Plan and track work across to-do, in-progress, and done.",
 };
 
 export default async function Page({ searchParams }: { searchParams: Promise<SearchParams> }) {

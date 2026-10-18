@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Docs",
+  description: "Write, organize, and revisit your notes and documents.",
 };
 
 export default async function Page({ searchParams }: { searchParams: Promise<SearchParams> }) {
