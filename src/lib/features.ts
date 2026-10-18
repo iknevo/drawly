@@ -1,4 +1,10 @@
-import { FileTextIcon, KanbanIcon, type LucideIcon, PencilRulerIcon } from "lucide-react";
+import {
+  FileTextIcon,
+  KanbanIcon,
+  type LucideIcon,
+  PencilRulerIcon,
+  TimerIcon,
+} from "lucide-react";
 
 export type FeatureStatus = "available" | "soon";
 
@@ -34,6 +40,14 @@ export const features: Feature[] = [
     description: "Write notes, drafts, and everything in between.",
     href: "/docs",
     icon: FileTextIcon,
+    status: "available",
+  },
+  {
+    id: "sessions",
+    label: "Sessions",
+    description: "Track time with timers and Pomodoro sessions.",
+    href: "/sessions",
+    icon: TimerIcon,
     status: "available",
   },
 ];

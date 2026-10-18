@@ -1,29 +1,29 @@
-import { cache } from "react";
+import { type SearchParams } from "nuqs/server";
 
 import { auth } from "@/lib/auth";
 
-import { SessionsPage } from "@/components/session/sessions-page";
+import { loadSessionListParams } from "@/modules/sessions/server/search-params";
+import { SessionsView } from "@/modules/sessions/ui/views/sessions-view";
 import { HydrateClient, prefetch, trpc } from "@/trpc/server";
-import { caller } from "@/trpc/server";
 
-const getSessions = cache(async () => {
-  try {
-    return await caller.sessions.list({ page: 1, pageSize: 12 });
-  } catch {
-    return null;
-  }
-});
+export const dynamic = "force-dynamic";
 
-export default async function Page() {
+export const metadata = {
+  title: "Sessions",
+  description: "Run focus sessions and pomodoro timers, and review your history.",
+};
+
+export default async function Page({ searchParams }: { searchParams: Promise<SearchParams> }) {
   await auth.protect({ role: "user", redirectTo: "/sessions" });
 
-  const sessions = await getSessions();
+  const { page, size, q, sort } = loadSessionListParams(await searchParams);
 
-  prefetch(trpc.sessions.list.queryOptions({ page: 1, pageSize: 12 }));
+  prefetch(trpc.sessions.list.queryOptions({ page, pageSize: Number(size), q, sort }));
+  prefetch(trpc.sessions.stats.queryOptions());
 
   return (
     <HydrateClient>
-      <SessionsPage initialSessions={sessions?.items ?? []} />
+      <SessionsView />
     </HydrateClient>
   );
 }

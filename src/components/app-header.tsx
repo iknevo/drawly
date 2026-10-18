@@ -53,6 +53,7 @@ export function AppHeader() {
                 <DropdownMenuLabel className="truncate">{data.user.email}</DropdownMenuLabel>
                 <DropdownMenuItem render={<Link href="/boards" />}>My boards</DropdownMenuItem>
                 <DropdownMenuItem render={<Link href="/docs" />}>My docs</DropdownMenuItem>
+                <DropdownMenuItem render={<Link href="/sessions" />}>My sessions</DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
               <DropdownMenuItem

@@ -2,11 +2,11 @@ import mongoose, { type InferSchemaType, type Model, type Types } from "mongoose
 
 const sessionSchema = new mongoose.Schema(
   {
-    userId: { type: String, required: true },
+    ownerId: { type: String, required: true },
     type: { type: String, enum: ["timer", "pomodoro"], required: true },
-    name: { type: String, default: "Anonymous" },
-    targetSeconds: { type: Number, default: 0 },
-    elapsedSeconds: { type: Number, default: 0 },
+    name: { type: String, trim: true, maxlength: 120, default: "Anonymous" },
+    targetSeconds: { type: Number, min: 0, default: 0 },
+    elapsedSeconds: { type: Number, min: 0, default: 0 },
     status: {
       type: String,
       enum: ["idle", "running", "paused", "completed"],
@@ -24,11 +24,14 @@ const sessionSchema = new mongoose.Schema(
       enum: ["work", "shortBreak", "longBreak"],
       default: "work",
     },
+    startedAt: { type: Date, default: null },
+    completedAt: { type: Date, default: null },
   },
-  { timestamps: true },
+  { timestamps: true, versionKey: false, minimize: false }
 );
 
-sessionSchema.index({ userId: 1, updatedAt: -1 });
+sessionSchema.index({ ownerId: 1, updatedAt: -1 });
+sessionSchema.index({ ownerId: 1, createdAt: -1 });
 
 export type SessionDoc = InferSchemaType<typeof sessionSchema> & {
   _id: Types.ObjectId;

@@ -1,17 +1,23 @@
 "use client";
 
-import { useState } from "react";
 import { TimerIcon, WatchIcon } from "lucide-react";
+
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
-export function ModeSwitch() {
-  const [mode, setMode] = useState<"timer" | "pomodoro">("timer");
+type ModeSwitchProps = {
+  mode: "timer" | "pomodoro";
+  onModeChange: (mode: "timer" | "pomodoro") => void;
+};
 
+export function ModeSwitch({ mode, onModeChange }: ModeSwitchProps) {
   return (
     <ToggleGroup
       value={[mode]}
-      onValueChange={(value) => setMode(value[0] as "timer" | "pomodoro")}
-      className="w-48"
+      onValueChange={(value) => {
+        const next = value[0];
+        if (next === "timer" || next === "pomodoro") onModeChange(next);
+      }}
+      className="w-56"
     >
       <ToggleGroupItem value="timer" className="flex items-center gap-2">
         <TimerIcon className="size-4" />
