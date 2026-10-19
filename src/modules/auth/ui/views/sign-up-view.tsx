@@ -39,6 +39,7 @@ export function SignUpView({ redirectTo }: { redirectTo?: string }) {
       email: data.email,
       password: data.password,
       username: data.username,
+      callbackURL: safeRedirect(redirectTo) ?? "/",
     });
 
     setIsPending(false);
@@ -48,8 +49,7 @@ export function SignUpView({ redirectTo }: { redirectTo?: string }) {
       return;
     }
 
-    router.push(safeRedirect(redirectTo) ?? "/");
-    router.refresh();
+    router.push(`/auth/verify-email?email=${encodeURIComponent(data.email)}`);
   }
 
   const switchHref = authHref("/auth/sign-in", redirectTo);

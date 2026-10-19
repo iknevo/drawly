@@ -8,6 +8,7 @@ import { redirect } from "next/navigation";
 
 import { authHref } from "./auth-redirect";
 import dbConnect from "./db";
+import { sendVerificationEmail } from "./email";
 
 await dbConnect();
 
@@ -23,6 +24,13 @@ const betterAuthInstance = betterAuth({
   database: mongodbAdapter(db, { client }),
   emailAndPassword: {
     enabled: true,
+    requireEmailVerification: true,
+  },
+  emailVerification: {
+    sendOnSignUp: true,
+    sendVerificationEmail: async ({ user, url }) => {
+      await sendVerificationEmail(user.email, url);
+    },
   },
   user: {
     additionalFields: {
