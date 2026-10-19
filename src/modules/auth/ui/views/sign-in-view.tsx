@@ -3,13 +3,14 @@
 import { signInSchema } from "../../validation";
 import { AuthLayout } from "../components/auth-layout";
 import { zodResolver } from "@hookform/resolvers/zod";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { authClient } from "@/lib/auth-client";
-import { authHref, safeRedirect } from "@/lib/auth-redirect";
+import { authHref, safeRedirect, verifyEmailHref } from "@/lib/auth-redirect";
 
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
@@ -40,6 +41,15 @@ export function SignInView({ redirectTo }: { redirectTo?: string }) {
     setIsPending(false);
 
     if (error) {
+      if (error.code === "EMAIL_NOT_VERIFIED" || error.message === "Email not verified") {
+        toast.add({
+          type: "info",
+          description: "Your email isn't verified yet — let's get you a new link",
+        });
+        router.push(verifyEmailHref(data.email, { redirectTo }));
+        return;
+      }
+
       toast.add({ type: "error", description: error.message });
       return;
     }
@@ -82,9 +92,17 @@ export function SignInView({ redirectTo }: { redirectTo?: string }) {
         control={form.control}
         render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
-            <FieldLabel className="text-base" htmlFor="password-input">
-              Password
-            </FieldLabel>
+            <div className="flex items-center justify-between">
+              <FieldLabel className="text-base" htmlFor="password-input">
+                Password
+              </FieldLabel>
+              <Link
+                href="/auth/forgot-password"
+                className="text-muted-foreground text-base underline underline-offset-4"
+              >
+                Forgot password?
+              </Link>
+            </div>
             <Input
               {...field}
               id="password-input"

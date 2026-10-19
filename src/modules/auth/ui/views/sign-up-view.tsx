@@ -9,7 +9,7 @@ import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { authClient } from "@/lib/auth-client";
-import { authHref, safeRedirect } from "@/lib/auth-redirect";
+import { authHref, verifyEmailHref } from "@/lib/auth-redirect";
 
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
@@ -39,7 +39,7 @@ export function SignUpView({ redirectTo }: { redirectTo?: string }) {
       email: data.email,
       password: data.password,
       username: data.username,
-      callbackURL: safeRedirect(redirectTo) ?? "/",
+      callbackURL: verifyEmailHref(data.email, { verified: true, redirectTo }),
     });
 
     setIsPending(false);
@@ -49,7 +49,7 @@ export function SignUpView({ redirectTo }: { redirectTo?: string }) {
       return;
     }
 
-    router.push(`/auth/verify-email?email=${encodeURIComponent(data.email)}`);
+    router.push(verifyEmailHref(data.email, { redirectTo }));
   }
 
   const switchHref = authHref("/auth/sign-in", redirectTo);
