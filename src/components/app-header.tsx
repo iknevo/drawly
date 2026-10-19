@@ -3,6 +3,7 @@
 import { UserIcon } from "lucide-react";
 import { Poppins } from "next/font/google";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
@@ -27,6 +28,7 @@ const poppins = Poppins({
 
 export function AppHeader() {
   const { data } = authClient.useSession();
+  const router = useRouter();
 
   return (
     <header className="mx-auto flex h-16 w-full max-w-6xl shrink-0 items-center gap-3 px-6">
@@ -56,7 +58,13 @@ export function AppHeader() {
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => {
-                  authClient.signOut();
+                  authClient.signOut({
+                    fetchOptions: {
+                      onSuccess: () => {
+                        router.push("/");
+                      },
+                    },
+                  });
                 }}
               >
                 Sign out
