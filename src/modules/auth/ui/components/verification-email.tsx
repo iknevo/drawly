@@ -1,54 +1,47 @@
-import {
-  Body,
-  Button,
-  Container,
-  Head,
-  Heading,
-  Html,
-  Preview,
-  Text,
-} from "@react-email/components";
+import { Button, Text } from "@react-email/components";
+
+import { AuthEmailLayout } from "./auth-email-layout";
 
 export function VerificationEmail({ verifyUrl }: { verifyUrl: string }) {
   return (
-    <Html>
-      <Head />
-      <Preview>Verify your email to get started with NEVO.dev</Preview>
-      <Body style={{ backgroundColor: "#f6f9fc", fontFamily: "sans-serif" }}>
-        <Container
-          style={{
-            backgroundColor: "#ffffff",
-            margin: "40px auto",
-            padding: "32px",
-            borderRadius: "8px",
-            maxWidth: "480px",
-          }}
-        >
-          <Heading style={{ fontSize: "22px", margin: "0 0 16px" }}>Verify your email</Heading>
-          <Text style={{ fontSize: "15px", lineHeight: "24px", color: "#444" }}>
-            Thanks for signing up for NEVO.dev. Click the button below to confirm your email
-            address.
-          </Text>
-          <Button
-            href={verifyUrl}
-            style={{
-              backgroundColor: "#000",
-              color: "#fff",
-              padding: "12px 24px",
-              borderRadius: "6px",
-              fontSize: "15px",
-              textDecoration: "none",
-              display: "inline-block",
-              margin: "16px 0",
-            }}
-          >
-            Verify email
-          </Button>
-          <Text style={{ fontSize: "13px", color: "#888" }}>
-            If you didn&apos;t create an account, you can safely ignore this email.
-          </Text>
-        </Container>
-      </Body>
-    </Html>
+    <AuthEmailLayout
+      preview="Verify your email to get started with Drawly"
+      heading="Verify your email"
+      footnote="If you didn't create a Drawly account, you can safely ignore this email."
+    >
+      <Text style={text}>
+        Thanks for signing up for Drawly. Confirm your email address to start creating boards, docs,
+        and sessions.
+      </Text>
+      <Button href={verifyUrl} style={button}>
+        Verify email
+      </Button>
+      <Text style={expiry}>This link expires in 1 hour.</Text>
+    </AuthEmailLayout>
   );
 }
+
+const text: React.CSSProperties = {
+  color: "#52525b",
+  fontSize: "15px",
+  lineHeight: "24px",
+  margin: "0 0 24px",
+};
+
+const button: React.CSSProperties = {
+  backgroundColor: "#171717",
+  color: "#fafafa",
+  padding: "12px 24px",
+  borderRadius: "8px",
+  fontSize: "15px",
+  fontWeight: "600",
+  textDecoration: "none",
+  display: "inline-block",
+};
+
+const expiry: React.CSSProperties = {
+  color: "#71717a",
+  fontSize: "13px",
+  lineHeight: "20px",
+  margin: "16px 0 0",
+};
