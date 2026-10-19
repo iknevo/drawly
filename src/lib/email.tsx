@@ -1,4 +1,4 @@
-"use server";
+import "server-only";
 
 import { render } from "@react-email/render";
 import nodemailer from "nodemailer";
@@ -25,7 +25,7 @@ const transporter = nodemailer.createTransport({
 
 export const sendEmail = async ({ email, subject, html }: Options) => {
   await transporter.sendMail({
-    from: `"Drawly" <${process.env.GMAIL_USER}>`,
+    from: `"Drawly" <${env.GMAIL_USER}>`,
     to: email,
     subject,
     html,
