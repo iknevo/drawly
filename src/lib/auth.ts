@@ -9,6 +9,7 @@ import { redirect } from "next/navigation";
 import { authHref } from "./auth-redirect";
 import dbConnect from "./db";
 import { sendPasswordResetEmail, sendVerificationEmail } from "./email";
+import { env } from "@/env";
 
 await dbConnect();
 
@@ -22,6 +23,25 @@ const client = mongoose.connection.getClient();
 
 const betterAuthInstance = betterAuth({
   database: mongodbAdapter(db, { client }),
+  baseURL: env.BETTER_AUTH_URL,
+  trustedOrigins: ["http://localhost:3000", env.NEXT_PUBLIC_APP_URL, env.BETTER_AUTH_URL].filter(
+    (v): v is string => Boolean(v) && v.length > 0
+  ),
+  accountLinking: {
+    enabled: true,
+    allowDifferentEmails: false,
+    trustedProviders: ["google", "github"],
+  },
+  socialProviders: {
+    github: {
+      clientId: env.GITHUB_CLIENT_ID,
+      clientSecret: env.GITHUB_CLIENT_SECRET,
+    },
+    google: {
+      clientId: env.GOOGLE_CLIENT_ID,
+      clientSecret: env.GOOGLE_CLIENT_SECRET,
+    },
+  },
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
@@ -83,7 +103,7 @@ export const auth = {
       redirect(authHref("/auth/sign-in", redirectTo));
     }
 
-    if (role && session.user.role !== role) {
+    if (role && (session.user.role ?? "user") !== role) {
       redirect("/unauthorized");
     }
 

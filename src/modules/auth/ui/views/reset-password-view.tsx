@@ -51,7 +51,7 @@ export function ResetPasswordView({ token, error }: ResetPasswordViewProps) {
       return;
     }
 
-    toast.add({ type: "success", description: "Password updated — sign in with your new one" });
+    toast.add({ type: "success", description: "Password updated - sign in with your new one" });
     router.push("/auth/sign-in");
     router.refresh();
   }
@@ -60,7 +60,7 @@ export function ResetPasswordView({ token, error }: ResetPasswordViewProps) {
     return (
       <AuthLayout title="Link invalid or expired" switchHref="/auth/sign-in" switchLabel="Sign in">
         <p className="text-muted-foreground">
-          This password reset link is invalid or has expired. Reset links are valid for 1 hour —
+          This password reset link is invalid or has expired. Reset links are valid for 1 hour -
           request a fresh one.
         </p>
         <Button

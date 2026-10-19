@@ -5,10 +5,6 @@ import { createPortal } from "react-dom";
 
 type HeaderSlot = "title" | "actions";
 
-function subscribe() {
-  return () => {};
-}
-
 export function HeaderActions({
   slot = "actions",
   children,
@@ -17,7 +13,7 @@ export function HeaderActions({
   children: ReactNode;
 }) {
   const host = useSyncExternalStore(
-    subscribe,
+    () => () => {},
     () => document.getElementById(`app-header-${slot}`),
     () => null
   );

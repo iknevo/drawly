@@ -6,8 +6,8 @@ const STATUS_LABELS: Record<SaveStatus, string> = {
   saved: "Saved",
   dirty: "Unsaved changes",
   saving: "Saving…",
-  error: "Couldn't save — retrying",
-  offline: "Offline — changes pending",
+  error: "Couldn't save - retrying",
+  offline: "Offline - changes pending",
 };
 
 export function SaveStatusLabel({ status }: { status: SaveStatus }) {

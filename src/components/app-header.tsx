@@ -7,7 +7,6 @@ import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
-import { DevMenu } from "@/components/home/dev-menu";
 import { SoundToggle } from "@/components/sound-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -41,7 +40,6 @@ export function AppHeader() {
         <div id="app-header-actions" className="flex items-center gap-2" />
         <SoundToggle />
         <ThemeToggle />
-        <DevMenu />
         {data?.user ? (
           <DropdownMenu>
             <DropdownMenuTrigger render={<Button variant="outline" size="sm" />}>

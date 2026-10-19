@@ -49,7 +49,7 @@ export function VerifyEmailView({ email, error, verified, redirect }: VerifyEmai
       <AuthLayout title="That link didn't work" switchHref="/auth/sign-in" switchLabel="Sign in">
         <p className="text-muted-foreground">
           {error === "TOKEN_EXPIRED"
-            ? "This verification link has expired. Links are valid for 1 hour — send a fresh one below."
+            ? "This verification link has expired. Links are valid for 1 hour - send a fresh one below."
             : "This verification link is invalid or has already been used. Send a fresh one below."}
         </p>
         {email && (
@@ -72,7 +72,7 @@ export function VerifyEmailView({ email, error, verified, redirect }: VerifyEmai
           ) : (
             "Your email has been verified."
           )}{" "}
-          You&apos;re signed in — jump back in where you left off.
+          You&apos;re signed in - jump back in where you left off.
         </p>
         <Button size="lg" onClick={continueToApp}>
           Continue to Drawly

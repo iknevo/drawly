@@ -19,7 +19,7 @@ export default async function Page({
     <VerifyEmailView
       email={email}
       error={error}
-      verified={verified === "1"}
+      verified={verified === "true"}
       redirect={safeRedirect(redirect)}
     />
   );

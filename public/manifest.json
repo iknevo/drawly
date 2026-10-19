@@ -1,7 +1,7 @@
 {
   "name": "Drawly",
   "short_name": "Drawly",
-  "description": "Sketch, write, and plan — draw your ideas.",
+  "description": "Sketch, write, and plan - draw your ideas.",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",

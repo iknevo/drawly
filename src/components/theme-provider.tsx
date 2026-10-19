@@ -3,8 +3,6 @@
 import { ThemeProvider as NextThemesProvider } from "@teispace/next-themes";
 import * as React from "react";
 
-import { ThemeHotkey } from "./theme-hotkey";
-
 function ThemeProvider({ children, ...props }: React.ComponentProps<typeof NextThemesProvider>) {
   return (
     <NextThemesProvider
@@ -14,7 +12,6 @@ function ThemeProvider({ children, ...props }: React.ComponentProps<typeof NextT
       disableTransitionOnChange
       {...props}
     >
-      <ThemeHotkey />
       {children}
     </NextThemesProvider>
   );

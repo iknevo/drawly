@@ -6,6 +6,7 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 import { cn } from "@/lib/utils";
 
+import { Signature } from "@/components/dev/signature";
 import { SoundProvider } from "@/components/sound-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toast";
@@ -71,6 +72,7 @@ export default function RootLayout({
                 <TooltipProvider>
                   {children}
                   <Toaster />
+                  <Signature />
                   <ReactQueryDevtools initialIsOpen={false} />
                 </TooltipProvider>
               </SoundProvider>
