@@ -79,6 +79,11 @@ const betterAuthInstance = betterAuth({
 
 type Role = "user" | "admin";
 
+const ROLE_RANK: Record<Role, number> = {
+  user: 1,
+  admin: 2,
+};
+
 export const auth = {
   ...betterAuthInstance,
 
@@ -103,8 +108,14 @@ export const auth = {
       redirect(authHref("/auth/sign-in", redirectTo));
     }
 
-    if (role && (session.user.role ?? "user") !== role) {
-      redirect("/unauthorized");
+    if (role) {
+      const userRole = (session.user.role as Role | undefined) ?? "user";
+      const userRank = ROLE_RANK[userRole] ?? 1;
+      const requiredRank = ROLE_RANK[role] ?? 1;
+
+      if (userRank < requiredRank) {
+        redirect("/unauthorized");
+      }
     }
 
     return session;
