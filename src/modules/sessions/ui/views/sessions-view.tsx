@@ -74,12 +74,12 @@ export function SessionsView() {
 function SessionsViewSuspense() {
   const trpc = useTRPC();
 
-  const [{ page, size, q, sort }, setParams] = useSessionListParams();
+  const [{ page, size, q, sort, type, status }, setParams] = useSessionListParams();
   const pageSize = Number(size);
 
   const { data } = useSuspenseQuery(
     trpc.sessions.list.queryOptions(
-      { page, pageSize, q, sort },
+      { page, pageSize, q, sort, type, status },
       { placeholderData: keepPreviousData }
     )
   );
@@ -89,7 +89,8 @@ function SessionsViewSuspense() {
   const rangeStart = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const rangeEnd = Math.min(page * pageSize, total);
   const searching = q.trim().length > 0;
-  const filters = { q, sort };
+  const filtering = type !== "all" || status !== "all";
+  const filters = { q, sort, type, status };
 
   useEffect(() => {
     if (total > 0 && page > totalPages) {
@@ -101,11 +102,11 @@ function SessionsViewSuspense() {
     void setParams({ page: next });
   };
 
-  const clearSearch = () => {
-    void setParams({ q: "", page: 1 });
+  const clearFilters = () => {
+    void setParams({ q: "", type: "all", status: "all", page: 1 });
   };
 
-  if (total === 0 && !searching) {
+  if (total === 0 && !searching && !filtering) {
     return (
       <Empty className="flex flex-col items-center justify-center py-20">
         <EmptyHeader>
@@ -128,11 +129,23 @@ function SessionsViewSuspense() {
           <EmptyMedia>
             <SearchIcon className="size-10" />
           </EmptyMedia>
-          <EmptyTitle>No sessions match &ldquo;{q}&rdquo;</EmptyTitle>
-          <EmptyDescription>Try a different search term.</EmptyDescription>
+          <EmptyTitle>
+            {searching ? (
+              <>No sessions match &ldquo;{q}&rdquo;</>
+            ) : (
+              "No sessions match these filters"
+            )}
+          </EmptyTitle>
+          <EmptyDescription>
+            {searching && filtering
+              ? "Try a different search term or clear the filters."
+              : searching
+                ? "Try a different search term."
+                : "Try widening the type or status filters."}
+          </EmptyDescription>
         </EmptyHeader>
-        <Button variant="outline" onClick={clearSearch}>
-          Clear search
+        <Button variant="outline" onClick={clearFilters}>
+          Clear filters
         </Button>
       </Empty>
     );

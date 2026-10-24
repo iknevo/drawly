@@ -16,6 +16,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import { SessionFilters } from "@/modules/sessions/ui/components/session-filters";
+
 export function SessionsToolbar() {
   const [{ size, q, sort }, setParams] = useSessionListParams();
 
@@ -41,62 +43,66 @@ export function SessionsToolbar() {
   };
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <div className="relative w-full max-w-xs">
-        <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
-        <Input
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search sessions…"
-          aria-label="Search sessions"
-          className="pl-8"
-        />
-        {search.length > 0 && (
-          <button
-            type="button"
-            onClick={clearSearch}
-            aria-label="Clear search"
-            className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2 -translate-y-1/2"
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="relative w-full max-w-xs">
+          <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
+          <Input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search sessions…"
+            aria-label="Search sessions"
+            className="pl-8"
+          />
+          {search.length > 0 && (
+            <button
+              type="button"
+              onClick={clearSearch}
+              aria-label="Clear search"
+              className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2 -translate-y-1/2"
+            >
+              <XIcon className="size-4" />
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground text-sm">Sort</span>
+          <Select
+            value={sort}
+            onValueChange={(value) => {
+              void setParams({ sort: value as SessionSort, page: 1 });
+            }}
           >
-            <XIcon className="size-4" />
-          </button>
-        )}
+            <SelectTrigger size="sm" aria-label="Sort sessions">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false} align="end">
+              <SelectItem value="updated">Last updated</SelectItem>
+              <SelectItem value="created">Recently created</SelectItem>
+            </SelectContent>
+          </Select>
+          <span className="text-muted-foreground text-sm">Per page</span>
+          <Select
+            value={size}
+            onValueChange={(value) => {
+              void setParams({ size: value as PageSize, page: 1 });
+            }}
+          >
+            <SelectTrigger size="sm" aria-label="Sessions per page">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false} align="end">
+              {PAGE_SIZE_VALUES.map((value) => (
+                <SelectItem key={value} value={value}>
+                  {value}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
-      <div className="flex items-center gap-2">
-        <span className="text-muted-foreground text-sm">Sort</span>
-        <Select
-          value={sort}
-          onValueChange={(value) => {
-            void setParams({ sort: value as SessionSort, page: 1 });
-          }}
-        >
-          <SelectTrigger size="sm" aria-label="Sort sessions">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent alignItemWithTrigger={false} align="end">
-            <SelectItem value="updated">Last updated</SelectItem>
-            <SelectItem value="created">Recently created</SelectItem>
-          </SelectContent>
-        </Select>
-        <span className="text-muted-foreground text-sm">Per page</span>
-        <Select
-          value={size}
-          onValueChange={(value) => {
-            void setParams({ size: value as PageSize, page: 1 });
-          }}
-        >
-          <SelectTrigger size="sm" aria-label="Sessions per page">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent alignItemWithTrigger={false} align="end">
-            {PAGE_SIZE_VALUES.map((value) => (
-              <SelectItem key={value} value={value}>
-                {value}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+
+      <SessionFilters />
     </div>
   );
 }
