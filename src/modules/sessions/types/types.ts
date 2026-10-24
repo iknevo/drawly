@@ -6,3 +6,7 @@ export type sessionsListOutput = inferRouterOutputs<AppRouter>["sessions"]["list
 export type sessionsListItem = sessionsListOutput["items"][number];
 export type sessionGetOutput = inferRouterOutputs<AppRouter>["sessions"]["get"];
 export type sessionStatsOutput = inferRouterOutputs<AppRouter>["sessions"]["stats"];
+
+export type SessionMode = "timer" | "pomodoro";
+export type SessionStatus = "idle" | "running" | "paused";
+export type SessionDraft = { name: string; targetSeconds: number };

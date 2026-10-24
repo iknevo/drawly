@@ -15,6 +15,8 @@ export const listSessionsSchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(Number(DEFAULT_PAGE_SIZE)),
   q: z.string().trim().max(100).default(""),
   sort: z.enum(["updated", "created"]).default("updated"),
+  type: z.enum(["all", "timer", "pomodoro"]).default("all"),
+  status: z.enum(["all", "ongoing", "completed"]).default("all"),
 });
 
 const pomodoroConfigSchema = z.object({

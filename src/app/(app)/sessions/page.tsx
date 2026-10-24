@@ -16,9 +16,9 @@ export const metadata = {
 export default async function Page({ searchParams }: { searchParams: Promise<SearchParams> }) {
   await auth.protect({ role: "user", redirectTo: "/sessions" });
 
-  const { page, size, q, sort } = loadSessionListParams(await searchParams);
+  const { page, size, q, sort, type, status } = loadSessionListParams(await searchParams);
 
-  prefetch(trpc.sessions.list.queryOptions({ page, pageSize: Number(size), q, sort }));
+  prefetch(trpc.sessions.list.queryOptions({ page, pageSize: Number(size), q, sort, type, status }));
   prefetch(trpc.sessions.stats.queryOptions());
 
   return (

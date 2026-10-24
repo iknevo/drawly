@@ -3,8 +3,17 @@ import { startOfDay, subDays } from "date-fns";
 import type { Types } from "mongoose";
 
 import { PomodoroCycle } from "@/lib/models/pomodoro-cycle";
-import { Session } from "@/lib/models/session";
+import { Session, type SessionDoc } from "@/lib/models/session";
 import { buildSortSpec, escapeRegExp } from "@/lib/search";
+
+import { resolveEffectiveStatus } from "@/modules/sessions/lib/status";
+
+type SessionFilter = {
+  ownerId: string;
+  name?: { $regex: string; $options: string };
+  type?: "timer" | "pomodoro";
+  status?: "completed" | { $ne: "completed" };
+};
 
 import {
   completeSessionSchema,
@@ -47,7 +56,7 @@ function mapSession(session: SessionRecord) {
     name: session.name,
     targetSeconds: session.targetSeconds,
     elapsedSeconds: session.elapsedSeconds,
-    status: session.status,
+    status: resolveEffectiveStatus(session.status, session.updatedAt),
     createdAt: session.createdAt,
     updatedAt: session.updatedAt,
     startedAt: session.startedAt ?? null,
@@ -71,14 +80,24 @@ function mapSessionDetail(session: SessionRecordWithConfig) {
 
 export const sessionsRouter = createTRPCRouter({
   list: protectedProcedure.input(listSessionsSchema).query(async ({ ctx, input }) => {
-    const { page, pageSize, q, sort } = input;
+    const { page, pageSize, q, sort, type, status } = input;
 
-    const filter: { ownerId: string; name?: { $regex: string; $options: string } } = {
+    const filter: SessionFilter = {
       ownerId: ctx.session.user.id,
     };
 
     if (q) {
       filter.name = { $regex: escapeRegExp(q), $options: "i" };
+    }
+
+    if (type !== "all") {
+      filter.type = type;
+    }
+
+    if (status === "completed") {
+      filter.status = "completed";
+    } else if (status === "ongoing") {
+      filter.status = { $ne: "completed" };
     }
 
     const [sessions, total] = await Promise.all([
