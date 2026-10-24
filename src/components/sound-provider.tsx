@@ -26,10 +26,11 @@ const INTERACTIVE_SELECTOR = [
   '[role="tab"]',
   '[role="option"]',
   '[role="switch"]',
+  '[data-slot="navigation-menu-trigger"]',
 ].join(", ");
 
 const MENU_SURFACE_SELECTOR =
-  '[role="menu"], [role="menubar"], [role="listbox"], [data-slot="navigation-menu-content"]';
+  '[role="menu"], [role="menubar"], [role="listbox"], [data-slot="navigation-menu-content"], [data-slot="popover-content"]';
 
 const HOVER_THROTTLE_MS = 45;
 

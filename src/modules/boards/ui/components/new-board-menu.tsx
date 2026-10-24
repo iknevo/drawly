@@ -8,6 +8,7 @@ import {
 } from "../../lib/templates";
 import {
   CalendarDaysIcon,
+  ChevronDownIcon,
   Columns3Icon,
   Grid2x2Icon,
   LayoutGridIcon,
@@ -25,6 +26,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "cn";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -66,14 +68,15 @@ export function NewBoardMenu({
         <NavigationMenuItem>
           <NavigationMenuTrigger
             disabled={disabled}
-            data-sound-hover
-            render={<Button size={size} variant="outline" disabled={disabled} />}
-          >
-            <PlusIcon />
-            New board
-          </NavigationMenuTrigger>
+            render={
+              <Button size={size} variant="outline" disabled={disabled} data-sound-hover>
+                <PlusIcon />
+                New board
+              </Button>
+            }
+          />
           <NavigationMenuContent>
-            <div className="w-140 p-3">
+            <div className="w-140 max-w-[calc(100vw-2rem)] p-3">
               <NavigationMenuLink
                 closeOnClick
                 render={
