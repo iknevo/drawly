@@ -1,229 +1,189 @@
 "use client";
 
-import type { sessionGetOutput } from "../../types/types";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { formatDistanceToNow, formatDistanceToNowStrict } from "date-fns";
-import {
-  ArrowLeftIcon,
-  MoreHorizontalIcon,
-  PencilIcon,
-  TimerIcon,
-  Trash2Icon,
-  WatchIcon,
-} from "lucide-react";
-import Link from "next/link";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { ErrorBoundary } from "react-error-boundary";
 
 import { useSound } from "@/components/sound-provider";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { ErrorState } from "@/components/error-state";
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Progress, ProgressLabel } from "@/components/ui/progress";
 import { toast } from "@/components/ui/toast";
 
 import { PHASE_LABEL } from "@/modules/sessions/lib/pomodoro";
-import { formatClock, formatDuration } from "@/modules/sessions/lib/time";
+import { formatClock, formatDuration, formatRelative } from "@/modules/sessions/lib/time";
+import { PomodoroSummary } from "@/modules/sessions/ui/components/pomodoro-summary";
+import { PomodoroTimeline } from "@/modules/sessions/ui/components/pomodoro-timeline";
+import { SessionDeleteDialog } from "@/modules/sessions/ui/components/session-delete-dialog";
+import { SessionDetailHeader } from "@/modules/sessions/ui/components/session-detail-header";
+import { SessionInfoGrid } from "@/modules/sessions/ui/components/session-info-grid";
+import { SessionRenameDialog } from "@/modules/sessions/ui/components/session-rename-dialog";
+import { useSessionInvalidation } from "@/modules/sessions/ui/hooks/use-session-invalidation";
+import { useSessionTimer } from "@/modules/sessions/ui/hooks/use-session-timer";
 import { useTRPC } from "@/trpc/client";
 
 type SessionDetailViewProps = {
   sessionId: string;
 };
 
-const STATUS_BADGE: Record<
-  sessionGetOutput["status"],
-  { label: string; variant: "default" | "secondary" | "outline" | "destructive" }
-> = {
-  idle: { label: "Idle", variant: "outline" },
-  running: { label: "Running", variant: "default" },
-  paused: { label: "Paused", variant: "secondary" },
-  completed: { label: "Completed", variant: "outline" },
-};
-
 export function SessionDetailView({ sessionId }: SessionDetailViewProps) {
-  const trpc = useTRPC();
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  const { play } = useSound();
-
-  const [renameOpen, setRenameOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [draftName, setDraftName] = useState("");
-
-  const session = useQuery(trpc.sessions.get.queryOptions({ id: sessionId }));
-
-  const renameSession = useMutation(
-    trpc.sessions.update.mutationOptions({
-      onSuccess: async () => {
-        await queryClient.invalidateQueries(trpc.sessions.list.queryFilter());
-        setRenameOpen(false);
-      },
-      onError: (error) => toast.add({ type: "error", description: error.message }),
-    })
-  );
-
-  const removeSession = useMutation(
-    trpc.sessions.remove.mutationOptions({
-      onSuccess: async () => {
-        play("delete");
-        await queryClient.invalidateQueries(trpc.sessions.list.queryFilter());
-        router.push("/sessions");
-      },
-      onError: (error) => toast.add({ type: "error", description: error.message }),
-    })
-  );
-
-  if (session.isPending) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <span className="border-muted border-t-foreground size-6 animate-spin rounded-full border-2" />
-      </div>
-    );
-  }
-
-  if (session.isError) {
-    return (
-      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4">
-        <p className="text-muted-foreground text-sm">{session.error.message}</p>
-        <Link href="/sessions" className={buttonVariants({ variant: "outline" })}>
-          Back to sessions
-        </Link>
-      </div>
-    );
-  }
-
-  const data = session.data;
-  const badge = STATUS_BADGE[data.status];
-  const isPomodoro = data.type === "pomodoro";
-  const hasTarget = data.targetSeconds > 0;
-  const progress = hasTarget
-    ? Math.min(100, Math.round((data.elapsedSeconds / data.targetSeconds) * 100))
-    : 0;
-
-  const submitRename = () => {
-    const next = draftName.trim();
-    if (!next || next === data.name) {
-      setRenameOpen(false);
-      return;
-    }
-    renameSession.mutate({ id: sessionId, name: next });
-  };
-
-  const openRename = () => {
-    setDraftName(data.name);
-    setRenameOpen(true);
-  };
-
-  const infoRows: { label: string; value: string }[] = [
-    { label: "Created", value: formatDistanceToNow(new Date(data.createdAt), { addSuffix: true }) },
-    ...(data.startedAt
-      ? [
-          {
-            label: "Started",
-            value: formatDistanceToNowStrict(new Date(data.startedAt), { addSuffix: true }),
-          },
-        ]
-      : []),
-    ...(data.completedAt
-      ? [
-          {
-            label: "Completed",
-            value: formatDistanceToNow(new Date(data.completedAt), { addSuffix: true }),
-          },
-        ]
-      : []),
-    { label: "Elapsed", value: formatDuration(data.elapsedSeconds) },
-    ...(hasTarget ? [{ label: "Target", value: formatDuration(data.targetSeconds) }] : []),
-  ];
-
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 p-6 lg:p-10">
+      <Suspense fallback={<SessionDetailViewSkeleton />}>
+        <ErrorBoundary
+          fallbackRender={({ resetErrorBoundary }) => <ErrorState onRetry={resetErrorBoundary} />}
+        >
+          <SessionDetailViewSuspense sessionId={sessionId} />
+        </ErrorBoundary>
+      </Suspense>
+    </div>
+  );
+}
+
+function SessionDetailViewSkeleton() {
+  return (
+    <>
       <div className="flex items-start justify-between gap-4">
-        <div className="flex min-w-0 items-center gap-3">
-          <Link
-            href="/sessions"
-            aria-label="Back to sessions"
-            className={buttonVariants({ variant: "ghost", size: "icon" })}
-          >
-            <ArrowLeftIcon />
-          </Link>
-          <div className="flex min-w-0 items-center gap-2">
-            <span className="bg-muted/60 flex size-9 shrink-0 items-center justify-center rounded-md">
-              {isPomodoro ? (
-                <WatchIcon className="text-muted-foreground size-4.5" />
-              ) : (
-                <TimerIcon className="text-muted-foreground size-4.5" />
-              )}
-            </span>
-            <div className="min-w-0">
-              <h1 className="truncate text-2xl font-medium tracking-tight" title={data.name}>
-                {data.name}
-              </h1>
-              <div className="text-muted-foreground flex items-center gap-2 text-xs">
-                <span className="capitalize">{data.type}</span>
-                <Badge variant={badge.variant} className="text-[0.65rem]">
-                  {badge.label}
-                </Badge>
-              </div>
-            </div>
+        <div className="flex items-center gap-3">
+          <div className="bg-muted size-9 animate-pulse rounded-md" />
+          <div className="bg-muted size-10 animate-pulse rounded-md" />
+          <div className="space-y-2">
+            <div className="bg-muted h-7 w-48 animate-pulse rounded" />
+            <div className="bg-muted h-4 w-24 animate-pulse rounded" />
           </div>
         </div>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={<Button variant="ghost" size="icon" aria-label="Session actions" />}
-          >
-            <MoreHorizontalIcon />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={openRename}>
-              <PencilIcon />
-              Rename
-            </DropdownMenuItem>
-            <DropdownMenuItem variant="destructive" onClick={() => setDeleteOpen(true)}>
-              <Trash2Icon />
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="bg-muted h-8 w-40 animate-pulse rounded-md" />
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {infoRows.map((row) => (
-          <Card key={row.label} size="sm" className="gap-1 px-3">
-            <span className="text-muted-foreground text-xs">{row.label}</span>
-            <span className="truncate text-sm font-medium tabular-nums" title={row.value}>
-              {row.value}
-            </span>
+        {Array.from({ length: 6 }).map((_, index) => (
+          <Card key={index} size="sm" className="gap-2 px-3">
+            <div className="bg-muted h-3 w-16 animate-pulse rounded" />
+            <div className="bg-muted h-4 w-24 animate-pulse rounded" />
           </Card>
         ))}
       </div>
+
+      <Card size="sm" className="gap-3 px-3">
+        <div className="bg-muted h-4 w-24 animate-pulse rounded" />
+        <div className="bg-muted h-1.5 w-full animate-pulse rounded" />
+      </Card>
+
+      <Card size="sm" className="gap-4 px-3">
+        <div className="bg-muted h-4 w-32 animate-pulse rounded" />
+        <div className="bg-muted h-2.5 w-full animate-pulse rounded-full" />
+        <div className="bg-muted h-20 w-full animate-pulse rounded" />
+      </Card>
+    </>
+  );
+}
+
+function SessionDetailViewSuspense({ sessionId }: SessionDetailViewProps) {
+  const trpc = useTRPC();
+  const timer = useSessionTimer();
+  const router = useRouter();
+  const { play } = useSound();
+  const invalidateSessions = useSessionInvalidation();
+
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+
+  const { data } = useSuspenseQuery(trpc.sessions.get.queryOptions({ id: sessionId }));
+
+  const isActive = timer.sessionId === data.id;
+  const liveElapsed = isActive ? timer.elapsed : data.elapsedSeconds;
+  const liveStatus = isActive ? timer.status : data.status;
+  const isPomodoro = data.type === "pomodoro";
+  const hasTarget = data.targetSeconds > 0;
+  const progress = hasTarget
+    ? Math.min(100, Math.round((liveElapsed / data.targetSeconds) * 100))
+    : 0;
+
+  const activePomodoro = isActive ? timer.pomodoro : null;
+  const completedPhases = activePomodoro
+    ? Math.max(0, activePomodoro.completedIndex + 1)
+    : Math.min(data.cycles.length, data.pomodoroConfig.cycles * 2);
+
+  const completeSession = useMutation(
+    trpc.sessions.complete.mutationOptions({
+      onSuccess: async () => {
+        play("success");
+        await invalidateSessions(data.id);
+        toast.add({
+          type: "success",
+          title: "Session complete",
+          description: `${data.name} · ${formatDuration(liveElapsed)}`,
+        });
+      },
+      onError: (error) => toast.add({ type: "error", description: error.message }),
+    })
+  );
+
+  const handleToggle = () => {
+    if (isActive && timer.status === "running") {
+      timer.pause();
+      return;
+    }
+    void timer.resumeSession(data.id);
+  };
+
+  const handleComplete = () => {
+    if (isActive) {
+      timer.complete();
+      return;
+    }
+    completeSession.mutate({ id: data.id, elapsedSeconds: data.elapsedSeconds });
+  };
+
+  return (
+    <>
+      <SessionDetailHeader
+        type={data.type}
+        name={data.name}
+        status={liveStatus}
+        isActive={isActive}
+        isPending={timer.isPending || completeSession.isPending}
+        onToggle={handleToggle}
+        onComplete={handleComplete}
+        onRename={() => setRenameOpen(true)}
+        onDelete={() => setDeleteOpen(true)}
+      />
+
+      {isActive && liveStatus !== "completed" && (
+        <Card size="sm" className="flex-row items-center justify-between gap-4 px-3">
+          <div className="flex flex-col gap-1">
+            <span className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+              Live now
+            </span>
+            <span className="font-mono text-3xl font-light tabular-nums">
+              {formatClock(liveElapsed)}
+            </span>
+          </div>
+          {activePomodoro && !activePomodoro.done && (
+            <div className="text-right">
+              <span className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+                {PHASE_LABEL[activePomodoro.phase]}
+              </span>
+              <div className="font-mono text-xl tabular-nums">
+                {formatClock(activePomodoro.timeRemaining)}
+              </div>
+              <span className="text-muted-foreground text-xs">
+                Cycle {activePomodoro.cycle}/{data.pomodoroConfig.cycles}
+              </span>
+            </div>
+          )}
+        </Card>
+      )}
+
+      <SessionInfoGrid
+        createdAt={data.createdAt}
+        startedAt={data.startedAt}
+        completedAt={data.completedAt}
+        elapsedSeconds={liveElapsed}
+        targetSeconds={data.targetSeconds}
+      />
 
       {hasTarget && (
         <Card size="sm" className="gap-3 px-3">
@@ -231,104 +191,91 @@ export function SessionDetailView({ sessionId }: SessionDetailViewProps) {
             <ProgressLabel>Progress</ProgressLabel>
             <span className="text-muted-foreground ml-auto text-sm tabular-nums">{progress}%</span>
           </Progress>
+          <div className="text-muted-foreground flex items-center justify-between text-xs">
+            <span className="tabular-nums">
+              {formatDuration(liveElapsed)} / {formatDuration(data.targetSeconds)}
+            </span>
+            <span>
+              {progress >= 100 ? "Target reached" : `${formatDuration(Math.max(0, data.targetSeconds - liveElapsed))} left`}
+            </span>
+          </div>
         </Card>
       )}
 
       {isPomodoro && (
-        <Card size="sm" className="gap-4 px-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Pomodoro plan</span>
+        <section className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <h2 className="text-sm font-medium">Pomodoro plan</h2>
             <span className="text-muted-foreground text-xs">
-              {Math.round(data.pomodoroConfig.work / 60)}m work •{" "}
-              {Math.round(data.pomodoroConfig.shortBreak / 60)}m break •{" "}
-              {Math.round(data.pomodoroConfig.longBreak / 60)}m long • {data.pomodoroConfig.cycles}{" "}
+              {Math.round(data.pomodoroConfig.work / 60)}m work ·{" "}
+              {Math.round(data.pomodoroConfig.shortBreak / 60)}m break ·{" "}
+              {Math.round(data.pomodoroConfig.longBreak / 60)}m long · {data.pomodoroConfig.cycles}{" "}
               cycles
             </span>
           </div>
 
-          {data.cycles.length > 0 ? (
-            <ul className="flex flex-col gap-2">
-              {data.cycles.map((cycle, index) => (
-                <li
-                  key={cycle.id}
-                  className="border-border/50 flex items-center justify-between border-b pb-2 text-sm last:border-b-0 last:pb-0"
-                >
-                  <span className="flex items-center gap-2">
+          <PomodoroSummary config={data.pomodoroConfig} cycles={data.cycles} />
+
+          <Card size="sm" className="gap-4 px-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Timeline</span>
+              <span className="text-muted-foreground text-xs tabular-nums">
+                {completedPhases}/{data.pomodoroConfig.cycles * 2} phases
+              </span>
+            </div>
+
+            <PomodoroTimeline config={data.pomodoroConfig} completedCount={completedPhases} />
+
+            {data.cycles.length > 0 ? (
+              <ul className="flex flex-col">
+                {data.cycles.map((cycle) => (
+                  <li
+                    key={cycle.id}
+                    className="border-border/50 grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b py-2 text-sm last:border-b-0 last:pb-0"
+                  >
                     <Badge variant="outline" className="text-[0.65rem]">
                       Cycle {cycle.cycleIndex}
                     </Badge>
-                    <span className="text-muted-foreground">{PHASE_LABEL[cycle.phase]}</span>
-                  </span>
-                  <span className="text-muted-foreground flex items-center gap-3 text-xs">
-                    {cycle.completedAt &&
-                      formatDistanceToNow(new Date(cycle.completedAt), { addSuffix: true })}
-                    <span className="tabular-nums">{formatClock(cycle.durationSeconds)}</span>
-                  </span>
-                  <span className="sr-only">segment {index + 1}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-muted-foreground text-sm">
-              No completed cycles yet. Completed phases appear here as the session runs.
-            </p>
-          )}
-        </Card>
+                    <span className="text-muted-foreground text-xs">
+                      {PHASE_LABEL[cycle.phase]}
+                    </span>
+                    <span className="text-muted-foreground flex items-center gap-3 text-xs">
+                      {cycle.completedAt && (
+                        <span className="hidden sm:inline">
+                          {formatRelative(cycle.completedAt)}
+                        </span>
+                      )}
+                      <span className="text-foreground tabular-nums">
+                        {formatClock(cycle.durationSeconds)}
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-muted-foreground text-sm">
+                No completed phases yet. Completed phases appear here as the session runs.
+              </p>
+            )}
+          </Card>
+        </section>
       )}
 
-      <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Rename session</DialogTitle>
-            <DialogDescription>Give your session a new name.</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-2">
-            <Label htmlFor="session-rename">Name</Label>
-            <Input
-              id="session-rename"
-              value={draftName}
-              autoFocus
-              maxLength={120}
-              onChange={(event) => setDraftName(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  submitRename();
-                }
-              }}
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRenameOpen(false)}>
-              Cancel
-            </Button>
-            <Button disabled={renameSession.isPending} onClick={submitRename}>
-              Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <SessionRenameDialog
+        session={{ id: data.id, name: data.name }}
+        open={renameOpen}
+        onOpenChange={setRenameOpen}
+      />
 
-      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete session?</AlertDialogTitle>
-            <AlertDialogDescription>
-              &ldquo;{data.name}&rdquo; will be permanently deleted. This cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              disabled={removeSession.isPending}
-              onClick={() => removeSession.mutate({ id: sessionId })}
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+      <SessionDeleteDialog
+        session={{ id: data.id, name: data.name }}
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        onDeleted={() => {
+          if (isActive) timer.clearSession();
+          router.push("/sessions");
+        }}
+      />
+    </>
   );
 }

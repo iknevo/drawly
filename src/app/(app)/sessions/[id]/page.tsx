@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import { cache } from "react";
 
 import { auth } from "@/lib/auth";
@@ -27,6 +28,9 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const { id } = await params;
 
   await auth.protect({ role: "user", redirectTo: `/sessions/${id}` });
+
+  const session = await getSession(id);
+  if (!session) notFound();
 
   prefetch(trpc.sessions.get.queryOptions({ id }));
 
