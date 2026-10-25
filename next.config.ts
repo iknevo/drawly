@@ -5,6 +5,9 @@ import withPWA from "next-pwa";
 const nextConfig: NextConfig = {
   transpilePackages: ["@quickdrawjs/core", "@quickdrawjs/react"],
   turbopack: {},
+  experimental: {
+    agentUpgrade: "security",
+  },
 };
 
 export default withPWA({
